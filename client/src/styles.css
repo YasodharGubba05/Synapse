@@ -1,0 +1,221 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
+
+/* ── Design Tokens ─────────────────────────────────────────────────────────── */
+:root {
+  /* Brand */
+  --brand:            #7C3AED;
+  --brand-light:      #8B5CF6;
+  --brand-glow:       rgba(124, 58, 237, 0.35);
+  --brand-muted:      rgba(124, 58, 237, 0.12);
+
+  /* Accent */
+  --accent-emerald:   #10B981;
+  --accent-amber:     #F59E0B;
+  --accent-rose:      #F43F5E;
+  --accent-sky:       #38BDF8;
+
+  /* Dark surfaces */
+  --bg:               #0A0A0F;
+  --surface:          #111118;
+  --surface-2:        #16161F;
+  --surface-3:        #1C1C28;
+  --surface-hover:    #22222F;
+  --glass:            rgba(17, 17, 24, 0.85);
+
+  /* Borders */
+  --border:           rgba(255, 255, 255, 0.07);
+  --border-bright:    rgba(255, 255, 255, 0.14);
+
+  /* Text */
+  --text-1:           #F1F1F8;
+  --text-2:           #9D9DB8;
+  --text-3:           #5A5A78;
+
+  /* Suggestion type colours */
+  --tag-answer:       rgba(16, 185, 129, 0.15);
+  --tag-answer-txt:   #34D399;
+  --tag-question:     rgba(56, 189, 248, 0.15);
+  --tag-question-txt: #38BDF8;
+  --tag-talking:      rgba(245, 158, 11, 0.15);
+  --tag-talking-txt:  #FCD34D;
+  --tag-fact:         rgba(244, 63, 94, 0.15);
+  --tag-fact-txt:     #FB7185;
+  --tag-clarify:      rgba(167, 139, 250, 0.15);
+  --tag-clarify-txt:  #A78BFA;
+
+  /* Radius */
+  --r-sm:   8px;
+  --r-md:   12px;
+  --r-lg:   16px;
+  --r-xl:   22px;
+  --r-pill: 999px;
+
+  /* Fonts */
+  --font-head: 'Plus Jakarta Sans', sans-serif;
+  --font-body: 'Inter', sans-serif;
+
+  /* Shadows */
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md:  0 4px 20px rgba(0,0,0,0.5);
+  --shadow-lg:  0 8px 40px rgba(0,0,0,0.6);
+  --shadow-brand: 0 0 20px var(--brand-glow);
+}
+
+/* Light theme override */
+[data-theme="light"] {
+  --bg:         #F0F0F8;
+  --surface:    #FFFFFF;
+  --surface-2:  #F6F6FC;
+  --surface-3:  #EBEBF6;
+  --surface-hover: #EEEEF8;
+  --glass:      rgba(255, 255, 255, 0.85);
+  --border:     rgba(0,0,0,0.08);
+  --border-bright: rgba(0,0,0,0.14);
+  --text-1:     #0F0F1A;
+  --text-2:     #5C5C78;
+  --text-3:     #9898B0;
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md:  0 4px 20px rgba(0,0,0,0.12);
+  --shadow-lg:  0 8px 40px rgba(0,0,0,0.16);
+}
+
+/* ── Reset ─────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #root {
+  height: 100%;
+  font-family: var(--font-body);
+  color: var(--text-1);
+  font-size: 14px;
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+body { margin: 0; overflow: hidden; }
+#root { overflow: hidden; }
+
+/* ── Layout ────────────────────────────────────────────────────────────────── */
+.app-layout > * {
+  min-height: 0;
+  min-width: 0;
+  height: 100%;
+}
+
+/* ── Scrollbars ────────────────────────────────────────────────────────────── */
+.scrollable::-webkit-scrollbar { width: 4px; }
+.scrollable::-webkit-scrollbar-track { background: transparent; }
+.scrollable::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 4px; }
+
+/* ── Panel base ────────────────────────────────────────────────────────────── */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+
+/* ── Animations ────────────────────────────────────────────────────────────── */
+@keyframes pulse-ring {
+  0%   { transform: scale(0.8); opacity: 0.6; }
+  80%, 100% { transform: scale(2.6); opacity: 0; }
+}
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes dot-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
+.fade-in-up { animation: fade-in-up 0.3s ease both; }
+
+.pulse-ring {
+  position: absolute; inset: 0;
+  border: 2px solid var(--accent-rose);
+  border-radius: 50%;
+  animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+  pointer-events: none;
+}
+
+.live-dot {
+  display: inline-block;
+  width: 7px; height: 7px;
+  background: var(--accent-rose);
+  border-radius: 50%;
+  animation: dot-pulse 1.4s ease-in-out infinite;
+}
+
+.shimmer-loading {
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--r-sm);
+  height: 14px;
+}
+
+/* ── Buttons ───────────────────────────────────────────────────────────────── */
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 18px;
+  background: var(--brand);
+  color: #fff;
+  border: none;
+  border-radius: var(--r-pill);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 0 0 0 var(--brand-glow);
+}
+.btn-primary:hover {
+  background: var(--brand-light);
+  box-shadow: var(--shadow-brand);
+  transform: translateY(-1px);
+}
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.btn-ghost {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 14px;
+  background: transparent;
+  color: var(--text-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-ghost:hover { background: var(--surface-hover); color: var(--text-1); border-color: var(--border-bright); }
+
+/* ── Badge ─────────────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px;
+  border-radius: var(--r-pill);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .app-layout {
+    grid-template-columns: 1fr !important;
+    overflow-y: auto !important;
+    height: auto !important;
+  }
+  .app-layout > * { height: min(70vh, 720px); }
+  .history-sidebar { display: none !important; }
+}
