@@ -10,69 +10,70 @@ Synapse is built using a decoupled client-server architecture designed to suppor
 
 ```mermaid
 graph TD
-    %% Frontend Components
-    subgraph Browser Client (React/Vite)
-        User[User Interface]
-        MR[MediaRecorder API]
-        AV[Canvas Visualizer]
-        State[React State Engine]
-        SS[sessionStorage]
-    end
 
-    %% Web Proxy
-    ViteProxy[Vite Dev Proxy]
+%% Frontend Components
+subgraph browser["Browser Client (React/Vite)"]
+    User["User Interface"]
+    MR["MediaRecorder API"]
+    AV["Canvas Visualizer"]
+    State["React State Engine"]
+    SS["sessionStorage"]
+end
 
-    %% Backend Server
-    subgraph FastAPI Backend
-        Main[main.py Lifespan]
-        RouterT[Transcribe Router]
-        RouterS[Suggestions Router]
-        RouterC[Chat Router]
-        RouterH[History Router]
-        RouterI[Intelligence Router]
-        DB_Conn[SQLAlchemy Connection Engine]
-    end
+%% Web Proxy
+ViteProxy["Vite Dev Proxy"]
 
-    %% External Services
-    subgraph Groq LPU Cloud
-        Whisper[Groq Whisper v3]
-        LlamaSug[Groq Llama 70B Suggestions]
-        LlamaInt[Groq Llama 70B NLP Engine]
-        LlamaChat[Groq Llama 8B Streaming Chat]
-    end
+%% Backend Server
+subgraph backend["FastAPI Backend"]
+    Main["main.py Lifespan"]
+    RouterT["Transcribe Router"]
+    RouterS["Suggestions Router"]
+    RouterC["Chat Router"]
+    RouterH["History Router"]
+    RouterI["Intelligence Router"]
+    DB_Conn["SQLAlchemy Connection Engine"]
+end
 
-    %% Storage
-    SQLite[(SQLite: synapse.db)]
+%% External Services
+subgraph groq["Groq LPU Cloud"]
+    Whisper["Groq Whisper Large v3"]
+    LlamaSug["Llama 3.3 70B Suggestions"]
+    LlamaInt["Llama 3.3 70B NLP Engine"]
+    LlamaChat["Llama 3.1 8B Instant Chat"]
+end
 
-    %% Data Connections
-    User -->|starts| MR
-    MR -->|captures audio| AV
-    MR -->|sends WebM chunks| State
-    State -->|POST /api/transcribe| ViteProxy
-    State -->|GET/POST/PUT/DELETE| ViteProxy
+%% Storage
+SQLite[("SQLite: synapse.db")]
 
-    ViteProxy -->|proxies 127.0.0.1:8000| Main
-    Main --> RouterT
-    Main --> RouterS
-    Main --> RouterC
-    Main --> RouterH
-    Main --> RouterI
+%% Data Flow
+User -->|Starts Meeting| MR
+MR -->|Captures Audio| AV
+MR -->|Sends WebM Chunks| State
 
-    %% External Connections
-    RouterT -->|transcribe audio| Whisper
-    RouterS -->|fetch suggestions| LlamaSug
-    RouterI -->|extract NLP metrics| LlamaInt
-    RouterC -->|stream tokens via SSE| LlamaChat
+State -->|POST /api/transcribe| ViteProxy
+State -->|REST API Requests| ViteProxy
 
-    %% DB Connections
-    RouterS -->|persist suggestions| DB_Conn
-    RouterC -->|persist chat messages| DB_Conn
-    RouterH -->|read/write session data| DB_Conn
-    RouterI -->|persist action items & decisions| DB_Conn
-    DB_Conn -->|SQL execution| SQLite
-    
-    %% API Key
-    SS -->|injected in X-Groq-API-Key| State
+ViteProxy -->|Proxy to FastAPI| Main
+
+Main --> RouterT
+Main --> RouterS
+Main --> RouterC
+Main --> RouterH
+Main --> RouterI
+
+RouterT -->|Transcribe| Whisper
+RouterS -->|Generate Suggestions| LlamaSug
+RouterI -->|Extract Intelligence| LlamaInt
+RouterC -->|SSE Chat| LlamaChat
+
+RouterS --> DB_Conn
+RouterC --> DB_Conn
+RouterH --> DB_Conn
+RouterI --> DB_Conn
+
+DB_Conn --> SQLite
+
+SS -->|X-Groq-API-Key| State
 ```
 
 ---
