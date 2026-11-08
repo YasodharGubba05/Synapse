@@ -14,7 +14,9 @@ if __package__ is None or __package__ == "":
 
 from backend.config import settings
 from backend.db_migrate import run_migrations
-from backend.routers import auth, chat, meeting, suggestions, transcribe, history, intelligence
+from backend.routers import (
+    auth, chat, meeting, models, suggestions, transcribe, history, intelligence,
+)
 from backend.services.groq_client import close_http_client, get_http_client
 from backend.database.connection import create_tables
 
@@ -150,7 +152,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 # paths keep working, exactly as before.
 for router in [
     auth.router, transcribe.router, suggestions.router, chat.router,
-    meeting.router, history.router, intelligence.router,
+    meeting.router, history.router, intelligence.router, models.router,
 ]:
     app.include_router(router, prefix="/api")
     app.include_router(router)

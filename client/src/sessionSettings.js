@@ -1,11 +1,23 @@
 export const SETTINGS_STORAGE_KEY = 'synapse_session_settings';
 
 export const AVAILABLE_MODELS = [
-  { value: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B (Best quality)' },
-  { value: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B (Fast)' },
-  { value: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B (Balanced)' },
-  { value: 'gemma2-9b-it', label: 'Gemma 2 9B (Efficient)' },
+  { value: 'openai/gpt-oss-120b', label: 'GPT-OSS 120B (Best quality)' },
+  { value: 'openai/gpt-oss-20b', label: 'GPT-OSS 20B (Fast)' },
 ];
+
+/**
+ * Model IDs Groq has decommissioned. A retired ID returns 404 rather than
+ * falling back to anything, so a value saved in a browser before the
+ * retirement would keep breaking every request until it is migrated.
+ */
+const RETIRED_MODELS = new Set([
+  'llama-3.3-70b-versatile',
+  'llama-3.1-8b-instant',
+  'mixtral-8x7b-32768',
+  'gemma2-9b-it',
+  'mistral-saba-24b',
+  'distil-whisper-large-v3-en',
+]);
 
 export const AVAILABLE_PLAYBOOKS = [
   { value: 'general', label: 'General Meeting', icon: '🎯' },
@@ -20,13 +32,20 @@ export const DEFAULT_SESSION_SETTINGS = {
   suggestionsContextWindow: 800,
   detailContextWindow: 3000,
   chatContextWindow: 3000,
-  selectedModel: 'llama-3.3-70b-versatile',
+  selectedModel: 'openai/gpt-oss-120b',
   playbook: 'general',
   theme: 'dark',
   suggestionsPrompt: '',
   detailPrompt: '',
   chatPrompt: '',
 };
+
+/** Fall back to the default when the saved model has been retired. */
+export function normalizeModel(value) {
+  const model = String(value || '').trim();
+  if (!model || RETIRED_MODELS.has(model)) return DEFAULT_SESSION_SETTINGS.selectedModel;
+  return model;
+}
 
 function parseInteger(value, fallback) {
   const parsed = Number.parseInt(value, 10);
@@ -42,7 +61,7 @@ export function normalizeSessionSettings(settings) {
     suggestionsContextWindow: parseInteger(settings?.suggestionsContextWindow, 800),
     detailContextWindow: parseInteger(settings?.detailContextWindow, 3000),
     chatContextWindow: parseInteger(settings?.chatContextWindow, 3000),
-    selectedModel: settings?.selectedModel || DEFAULT_SESSION_SETTINGS.selectedModel,
+    selectedModel: normalizeModel(settings?.selectedModel),
     playbook: settings?.playbook || DEFAULT_SESSION_SETTINGS.playbook,
     theme: settings?.theme || 'dark',
     suggestionsPrompt: String(settings?.suggestionsPrompt ?? ''),

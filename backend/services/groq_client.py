@@ -57,6 +57,17 @@ async def groq_post(endpoint: str, api_key: str, payload: dict[str, Any]) -> dic
     return response.json()
 
 
+async def groq_get(endpoint: str, api_key: str) -> dict[str, Any]:
+    client = await get_http_client()
+    response = await client.get(f"{GROQ_BASE}{endpoint}", headers=_build_auth_headers(api_key))
+    if response.status_code != 200:
+        raise HTTPException(
+            status_code=response.status_code,
+            detail=_safe_error_detail(response.text, api_key),
+        )
+    return response.json()
+
+
 async def groq_post_multipart(
     api_key: str,
     files: dict[str, Any],

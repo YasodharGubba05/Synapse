@@ -265,9 +265,9 @@ def test_intelligence_uses_the_requested_model(alice, monkeypatch):
     monkeypatch.setattr("backend.routers.intelligence.groq_post", fake_post)
     alice.post(
         "/api/intelligence",
-        json={"transcript_slice": "text", "model": "llama-3.3-70b-versatile"},
+        json={"transcript_slice": "text", "model": "openai/gpt-oss-120b"},
     )
-    assert captured["model"] == "llama-3.3-70b-versatile"
+    assert captured["model"] == "openai/gpt-oss-120b"
 
 
 # ── Streaming copilot ─────────────────────────────────────────────────────────
@@ -494,3 +494,44 @@ def test_model_supplied_ids_are_never_trusted(alice, db_session, monkeypatch):
     assert returned != "../../etc/passwd"
     stored = db_session.query(ActionItem).filter(ActionItem.session_id == session_id).first()
     assert returned == stored.id
+
+
+# ── Model catalogue ──────────────────────────────────────────────────────────
+
+def test_models_endpoint_lists_only_chat_models(alice, monkeypatch):
+    """Groq retires model IDs, and a retired one 404s every request. The
+    Settings dropdown is populated from the caller's live account instead."""
+    async def fake_get(endpoint, api_key):
+        assert endpoint == "/models"
+        return {
+            "data": [
+                {"id": "openai/gpt-oss-120b"},
+                {"id": "openai/gpt-oss-20b"},
+                {"id": "whisper-large-v3"},
+                {"id": "playai-tts"},
+                {"id": "meta-llama/llama-guard-4-12b"},
+            ]
+        }
+
+    monkeypatch.setattr("backend.routers.models.groq_get", fake_get)
+    response = alice.get("/api/models")
+    assert response.status_code == 200
+    body = response.json()
+    ids = [m["value"] for m in body["models"]]
+    assert ids == ["openai/gpt-oss-120b", "openai/gpt-oss-20b"]
+    assert body["defaults"]["chat"] and body["defaults"]["suggestions"]
+
+
+def test_models_endpoint_requires_authentication(client):
+    response = client.get("/api/models", headers={"X-Groq-API-Key": "k"})
+    assert response.status_code == 401
+
+
+def test_models_endpoint_surfaces_a_bad_key_without_echoing_it(alice, monkeypatch):
+    async def fake_get(endpoint, api_key):
+        raise HTTPException(status_code=401, detail=f"Invalid API Key: {api_key}")
+
+    monkeypatch.setattr("backend.routers.models.groq_get", fake_get)
+    response = alice.get("/api/models")
+    assert response.status_code == 401
+    assert "gsk_test_key_never_persisted" not in response.text

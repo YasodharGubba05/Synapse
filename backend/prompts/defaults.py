@@ -1,7 +1,17 @@
-TRANSCRIPTION_MODEL = "whisper-large-v3"
-SUGGESTIONS_MODEL = "llama-3.3-70b-versatile"
-CHAT_MODEL = "llama-3.1-8b-instant"
-INTELLIGENCE_MODEL = "llama-3.3-70b-versatile"
+"""Model IDs and system prompts.
+
+Groq retires model IDs on a schedule, and a retired ID returns 404 rather
+than falling back to anything. Every default below is therefore overridable
+from the environment, so a decommissioned model can be swapped on the
+deployment without a code change. `GET /api/models` lists what the caller's
+own Groq account can actually use right now.
+"""
+import os
+
+TRANSCRIPTION_MODEL = os.getenv("GROQ_TRANSCRIPTION_MODEL", "whisper-large-v3")
+SUGGESTIONS_MODEL = os.getenv("GROQ_SUGGESTIONS_MODEL", "openai/gpt-oss-120b")
+CHAT_MODEL = os.getenv("GROQ_CHAT_MODEL", "openai/gpt-oss-20b")
+INTELLIGENCE_MODEL = os.getenv("GROQ_INTELLIGENCE_MODEL", "openai/gpt-oss-120b")
 
 # ── Playbook system prompts ───────────────────────────────────────────────────
 

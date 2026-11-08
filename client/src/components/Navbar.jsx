@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AVAILABLE_MODELS, AVAILABLE_PLAYBOOKS, DEFAULT_SESSION_SETTINGS, normalizeSessionSettings } from '../sessionSettings';
 import { useAuth } from '../authContext';
+import { fetchAvailableModels } from '../api';
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -43,7 +44,26 @@ const HistoryIcon = () => (
 
 function SettingsModal({ initialSettings, onClose, onSave }) {
   const [draft, setDraft] = useState(() => normalizeSessionSettings(initialSettings));
+  const [models, setModels] = useState(AVAILABLE_MODELS);
   const update = (field, value) => setDraft(prev => ({ ...prev, [field]: value }));
+
+  // Ask Groq what this key can actually use. Model IDs get retired, and a
+  // retired one returns 404 on every request, so a hardcoded list goes stale.
+  // Falls back silently to the built-in list when the key is absent or invalid.
+  useEffect(() => {
+    let cancelled = false;
+    if (!draft.apiKey) return undefined;
+    fetchAvailableModels()
+      .then(data => {
+        if (!cancelled && Array.isArray(data?.models) && data.models.length) {
+          setModels(data.models);
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+    // Only re-run when a key is first supplied, not on every keystroke.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [Boolean(draft.apiKey)]);
 
   return (
     <div style={s.backdrop} onClick={onClose}>
@@ -63,7 +83,10 @@ function SettingsModal({ initialSettings, onClose, onSave }) {
           <div style={{ ...s.fieldGroup, flex: 1 }}>
             <label style={s.label}>LLM Model</label>
             <select value={draft.selectedModel} onChange={e => update('selectedModel', e.target.value)} style={s.select}>
-              {AVAILABLE_MODELS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+              {models.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+              {!models.some(m => m.value === draft.selectedModel) && (
+                <option value={draft.selectedModel}>{draft.selectedModel}</option>
+              )}
             </select>
           </div>
           <div style={{ ...s.fieldGroup, flex: 1 }}>

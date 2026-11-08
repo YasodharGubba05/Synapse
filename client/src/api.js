@@ -209,6 +209,13 @@ export async function fetchIntelligence(payload) {
   return response.json();
 }
 
+/** Chat models the signed-in user's Groq key can actually use. */
+export async function fetchAvailableModels() {
+  const response = await authedFetch('/models', { headers: buildHeaders(false) });
+  if (!response.ok) throw new Error(`Model list failed (${response.status})`);
+  return response.json();
+}
+
 export async function startMeeting(payload) {
   const response = await authedFetch('/meeting/start', {
     method: 'POST', headers: buildHeaders(true), body: JSON.stringify(payload),
