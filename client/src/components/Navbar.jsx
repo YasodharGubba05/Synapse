@@ -109,7 +109,7 @@ function SettingsModal({ initialSettings, onClose, onSave }) {
             placeholder="Leave blank to use the selected playbook default..." style={{ ...s.textarea, minHeight: 80 }} />
         </div>
 
-        <div style={s.actions}>
+        <div style={s.modalActions}>
           <button style={s.btnSecondary} onClick={onClose}>Cancel</button>
           <button style={s.btnSecondary} onClick={() => { const c = { ...draft, apiKey: '' }; setDraft(c); onSave(c); }}>Clear Key</button>
           <button style={s.btnSecondary} onClick={() => setDraft({ ...DEFAULT_SESSION_SETTINGS })}>Reset</button>
@@ -135,7 +135,6 @@ export default function Navbar({ settings, onSaveSettings, onExportSession, canE
       setSigningOut(false);
     }
   };
-  const activePlaybook = AVAILABLE_PLAYBOOKS.find(p => p.value === settings.playbook) || AVAILABLE_PLAYBOOKS[0];
 
   const handlePlaybookChange = (value) => {
     onSaveSettings({ ...settings, playbook: value });
@@ -225,9 +224,9 @@ export default function Navbar({ settings, onSaveSettings, onExportSession, canE
 
 const s = {
   navbar: {
-    background: 'var(--surface)',
+    background: 'var(--bg)',
     borderBottom: '1px solid var(--border)',
-    minHeight: 60,
+    minHeight: 56,
     padding: '0 20px',
     display: 'flex',
     alignItems: 'center',
@@ -239,20 +238,20 @@ const s = {
   },
   brand: { display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 },
   brandLogo: {
-    width: 34, height: 34,
-    background: 'linear-gradient(135deg, var(--brand), var(--brand-light))',
-    borderRadius: 10,
+    width: 30, height: 30,
+    background: 'var(--surface-3)',
+    border: '1px solid var(--border-bright)',
+    borderRadius: 'var(--r-md)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    boxShadow: 'var(--shadow-brand)',
   },
-  brandIcon: { fontSize: 18 },
-  brandName: { display: 'block', fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 800, color: 'var(--text-1)', lineHeight: 1.1 },
-  brandTag: { display: 'block', fontSize: 9, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-3)', marginTop: 1 },
-  playbookWrap: { display: 'flex', alignItems: 'center', gap: 4, background: 'var(--surface-2)', padding: '4px', borderRadius: 'var(--r-pill)', border: '1px solid var(--border)' },
+  brandIcon: { fontSize: 15 },
+  brandName: { display: 'block', fontFamily: 'var(--font-head)', fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--text-1)', lineHeight: 1.15 },
+  brandTag: { display: 'block', fontSize: 9, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-3)', marginTop: 1 },
+  playbookWrap: { display: 'flex', alignItems: 'center', gap: 2, background: 'var(--surface-2)', padding: '3px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)' },
   playbookBtn: {
     display: 'flex', alignItems: 'center', gap: 5,
-    padding: '5px 10px',
-    borderRadius: 'var(--r-pill)',
+    padding: '5px 9px',
+    borderRadius: 'var(--r-sm)',
     border: 'none',
     background: 'transparent',
     color: 'var(--text-3)',
@@ -262,9 +261,9 @@ const s = {
     whiteSpace: 'nowrap',
   },
   playbookBtnActive: {
-    background: 'var(--brand)',
-    color: '#fff',
-    boxShadow: 'var(--shadow-brand)',
+    background: 'var(--surface-hover)',
+    color: 'var(--text-1)',
+    boxShadow: 'inset 0 0 0 1px var(--border-bright)',
   },
   playbookLabel: { display: 'none' },
   actions: { display: 'flex', alignItems: 'center', gap: 6 },
@@ -275,9 +274,10 @@ const s = {
     borderLeft: '1px solid var(--border)',
   },
   avatar: {
-    width: 26, height: 26, borderRadius: '50%',
-    background: 'linear-gradient(135deg, var(--brand), var(--brand-light))',
-    color: '#fff', fontSize: 11, fontWeight: 700,
+    width: 24, height: 24, borderRadius: 'var(--r-sm)',
+    background: 'var(--brand-muted)',
+    border: '1px solid var(--border-bright)',
+    color: 'var(--brand-light)', fontSize: 10.5, fontWeight: 700,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     flexShrink: 0,
   },
@@ -296,7 +296,7 @@ const s = {
   card: {
     background: 'var(--surface-2)',
     border: '1px solid var(--border-bright)',
-    borderRadius: 20,
+    borderRadius: 'var(--r-xl)',
     width: 'min(680px, calc(100vw - 32px))',
     maxHeight: 'calc(100vh - 48px)',
     overflowY: 'auto',
@@ -310,28 +310,28 @@ const s = {
   row: { display: 'flex', gap: 14, marginBottom: 0 },
   label: { fontSize: 11, fontWeight: 600, color: 'var(--text-3)', letterSpacing: '0.07em', textTransform: 'uppercase' },
   input: {
-    width: '100%', border: '1px solid var(--border-bright)', borderRadius: 10,
-    padding: '11px 14px', fontSize: 13, color: 'var(--text-1)',
+    width: '100%', border: '1px solid var(--border-bright)', borderRadius: 'var(--r-md)',
+    padding: '10px 13px', fontSize: 13, color: 'var(--text-1)',
     background: 'var(--surface-3)', outline: 'none', fontFamily: 'var(--font-body)',
   },
   select: {
-    width: '100%', border: '1px solid var(--border-bright)', borderRadius: 10,
-    padding: '10px 14px', fontSize: 13, color: 'var(--text-1)',
+    width: '100%', border: '1px solid var(--border-bright)', borderRadius: 'var(--r-md)',
+    padding: '10px 13px', fontSize: 13, color: 'var(--text-1)',
     background: 'var(--surface-3)', outline: 'none', fontFamily: 'var(--font-body)', cursor: 'pointer',
   },
   textarea: {
-    width: '100%', minHeight: 100, border: '1px solid var(--border-bright)', borderRadius: 10,
+    width: '100%', minHeight: 100, border: '1px solid var(--border-bright)', borderRadius: 'var(--r-md)',
     padding: 12, fontSize: 13, color: 'var(--text-1)',
     background: 'var(--surface-3)', outline: 'none', fontFamily: 'var(--font-body)',
     resize: 'vertical', lineHeight: 1.5,
   },
-  actions: { marginTop: 24, display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 10 },
+  modalActions: { marginTop: 24, display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 10 },
   btnSecondary: {
     border: '1px solid var(--border-bright)', background: 'transparent', color: 'var(--text-2)',
-    borderRadius: 'var(--r-pill)', padding: '9px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 500, fontFamily: 'var(--font-body)',
+    borderRadius: 'var(--r-md)', padding: '8px 14px', cursor: 'pointer', fontSize: 'var(--fs-sm)', fontWeight: 500, fontFamily: 'var(--font-body)',
   },
   btnPrimary: {
-    border: 'none', background: 'var(--brand)', color: '#fff',
-    borderRadius: 'var(--r-pill)', padding: '9px 20px', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-body)',
+    border: 'none', background: 'var(--action)', color: 'var(--action-text)',
+    borderRadius: 'var(--r-md)', padding: '8px 18px', cursor: 'pointer', fontSize: 'var(--fs-sm)', fontWeight: 600, fontFamily: 'var(--font-body)',
   },
 };

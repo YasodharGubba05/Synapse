@@ -251,8 +251,8 @@ function Workspace() {
       <HistorySidebar open={historyOpen} onClose={() => setHistoryOpen(false)} onLoadSession={handleLoadSession} />
 
       <div className="app-layout" style={{
-        flex: 1, display: 'grid', gridTemplateColumns: '30fr 38fr 32fr',
-        gap: 12, padding: 12, overflow: 'hidden', minHeight: 0, height: '100%',
+        flex: 1, display: 'grid', gridTemplateColumns: '34fr 34fr 32fr',
+        gap: 10, padding: 10, overflow: 'hidden', minHeight: 0, height: '100%',
       }}>
         <TranscriptPanel
           ref={transcriptPanelRef}
@@ -303,7 +303,7 @@ function Workspace() {
 function AuthLoadingScreen() {
   return (
     <div style={loadingStyles.page}>
-      <div style={loadingStyles.logo}><span style={{ fontSize: 22 }}>⚡</span></div>
+      <div style={loadingStyles.logo}><span style={{ fontSize: 17 }}>⚡</span></div>
       <div style={loadingStyles.bar}><div className="shimmer-loading" style={{ height: 4, borderRadius: 4 }} /></div>
       <span style={loadingStyles.label}>Restoring your session…</span>
     </div>
@@ -317,10 +317,10 @@ const loadingStyles = {
     background: 'var(--bg)',
   },
   logo: {
-    width: 44, height: 44, borderRadius: 12,
-    background: 'linear-gradient(135deg, var(--brand), var(--brand-light))',
+    width: 38, height: 38, borderRadius: 'var(--r-md)',
+    background: 'var(--surface-3)',
+    border: '1px solid var(--border-bright)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    boxShadow: 'var(--shadow-brand)',
   },
   bar: { width: 160 },
   label: { fontSize: 12, color: 'var(--text-3)', letterSpacing: '0.04em' },

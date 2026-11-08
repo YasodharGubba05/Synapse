@@ -4,7 +4,7 @@ import { formatSessionTimestamp } from '../sessionSettings';
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 const SendIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
 );
 const CheckIcon = () => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -261,23 +261,23 @@ const s = {
   panel: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-xl)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: 'var(--shadow-md)', minHeight: 0 },
   tabs: { display: 'flex', borderBottom: '1px solid var(--border)', flexShrink: 0 },
   tab: { flex: 1, padding: '14px 10px', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600, color: 'var(--text-3)', transition: 'all 0.2s' },
-  tabActive: { color: 'var(--brand-light)', borderBottom: '2px solid var(--brand)', background: 'var(--brand-muted)' },
+  tabActive: { color: 'var(--text-1)', borderBottom: '2px solid var(--text-1)', background: 'transparent' },
   // Chat
   chatBody: { flex: 1, overflowY: 'auto', padding: '16px 18px', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 12 },
   bubbleWrap: { display: 'flex' },
   bubble: { maxWidth: '88%', padding: '10px 14px', borderRadius: 'var(--r-md)', lineHeight: 1.6, wordBreak: 'break-word' },
-  bubbleUser: { background: 'var(--brand)', color: '#fff', fontSize: 13.5, borderTopRightRadius: 4 },
+  bubbleUser: { background: 'var(--action)', color: 'var(--action-text)', fontSize: 'var(--fs-body)', borderTopRightRadius: 4, fontWeight: 500 },
   bubbleAssistant: { background: 'var(--surface-2)', color: 'var(--text-1)', fontSize: 13.5, border: '1px solid var(--border)', borderTopLeftRadius: 4 },
   inputArea: { borderTop: '1px solid var(--border)', padding: '12px 16px', display: 'flex', gap: 8, alignItems: 'flex-end', flexShrink: 0 },
-  textarea: { flex: 1, background: 'var(--surface-3)', border: '1px solid var(--border-bright)', borderRadius: 'var(--r-pill)', padding: '9px 16px', fontFamily: 'var(--font-body)', fontSize: 13.5, color: 'var(--text-1)', resize: 'none', outline: 'none', minHeight: 40, maxHeight: 120, lineHeight: 1.5 },
-  sendBtn: { background: 'var(--brand)', border: 'none', borderRadius: '50%', width: 40, height: 40, flexShrink: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' },
+  textarea: { flex: 1, background: 'var(--surface-3)', border: '1px solid var(--border-bright)', borderRadius: 'var(--r-md)', padding: '9px 14px', fontFamily: 'var(--font-body)', fontSize: 13.5, color: 'var(--text-1)', resize: 'none', outline: 'none', minHeight: 40, maxHeight: 120, lineHeight: 1.5 },
+  sendBtn: { background: 'var(--action)', color: 'var(--action-text)', border: 'none', borderRadius: 'var(--r-md)', width: 38, height: 38, flexShrink: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s ease' },
   // Board
   board: { flex: 1, overflowY: 'auto', padding: 18, display: 'flex', flexDirection: 'column', gap: 20 },
   section: { display: 'flex', flexDirection: 'column', gap: 10 },
   sectionTitle: { fontSize: 10, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--text-3)' },
   sentimentBadge: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderRadius: 'var(--r-md)' },
   tagCloud: { display: 'flex', flexWrap: 'wrap', gap: 6 },
-  keyword: { fontSize: 11, fontWeight: 600, color: 'var(--brand-light)', background: 'var(--brand-muted)', padding: '4px 10px', borderRadius: 'var(--r-pill)' },
+  keyword: { fontSize: 'var(--fs-meta)', fontWeight: 500, color: 'var(--text-2)', background: 'var(--surface-3)', border: '1px solid var(--border)', padding: '3px 8px', borderRadius: 'var(--r-sm)' },
   decisionItem: { display: 'flex', gap: 10, alignItems: 'flex-start', padding: '8px 12px', background: 'rgba(16,185,129,0.07)', borderRadius: 'var(--r-md)', border: '1px solid rgba(16,185,129,0.15)' },
   decisionDot: { color: '#10B981', fontWeight: 700, flexShrink: 0, fontSize: 13, marginTop: 1 },
   emptyNote: { fontSize: 12, color: 'var(--text-3)', fontStyle: 'italic' },
@@ -287,5 +287,5 @@ const s = {
   deleteBtn: { width: 24, height: 24, border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 4, flexShrink: 0 },
   addTaskRow: { display: 'flex', gap: 8, marginTop: 4 },
   addInput: { flex: 1, background: 'var(--surface-3)', border: '1px solid var(--border-bright)', borderRadius: 'var(--r-md)', padding: '8px 12px', fontSize: 13, color: 'var(--text-1)', outline: 'none', fontFamily: 'var(--font-body)' },
-  addBtn: { width: 34, height: 34, background: 'var(--brand-muted)', border: '1px solid var(--brand)', borderRadius: 'var(--r-md)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--brand-light)', flexShrink: 0 },
+  addBtn: { width: 34, height: 34, background: 'var(--surface-3)', border: '1px solid var(--border-bright)', borderRadius: 'var(--r-md)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-1)', flexShrink: 0 },
 };

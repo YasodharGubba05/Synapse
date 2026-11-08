@@ -2,14 +2,14 @@ import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } f
 import { transcribeAudioBlob } from '../api';
 
 const MicIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <rect x="9" y="2" width="6" height="11" rx="3"/>
     <path d="M5 10a7 7 0 0014 0M12 19v4M8 23h8"/>
   </svg>
 );
 
 const StopIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="1.5">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.5">
     <rect x="4" y="4" width="16" height="16" rx="2"/>
   </svg>
 );
@@ -88,6 +88,12 @@ function AudioVisualizer({ stream, isRecording }) {
     />
   );
 }
+
+const WaveIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+    <path d="M3 12h2M8 7v10M12 4v16M16 8v8M20 11h1"/>
+  </svg>
+);
 
 const TranscriptPanel = forwardRef(function TranscriptPanel(
   { entries, hasApiKey, onTranscriptChunk, onRecordingChange, onSilencePeriod },
@@ -263,7 +269,11 @@ const TranscriptPanel = forwardRef(function TranscriptPanel(
           <div style={{ position: 'relative', display: 'inline-flex' }}>
             {isRecording && <div className="pulse-ring" />}
             <button
-              style={{ ...s.micBtn, background: isRecording ? '#DC2626' : 'var(--brand)', boxShadow: isRecording ? '0 0 24px rgba(220,38,38,0.5)' : 'var(--shadow-brand)' }}
+              style={{
+                ...s.micBtn,
+                background: isRecording ? 'var(--accent-rose)' : 'var(--action)',
+                color: isRecording ? '#1A0509' : 'var(--action-text)',
+              }}
               onClick={isRecording ? stopRecording : startRecording}
               title={isRecording ? 'Stop recording' : 'Start recording'}
             >
@@ -276,7 +286,11 @@ const TranscriptPanel = forwardRef(function TranscriptPanel(
 
       <div ref={bodyRef} style={s.body} className="scrollable">
         {entries.length === 0 && (
-          <div style={s.empty}>Transcript will appear here once recording starts.</div>
+          <div className="empty-state">
+            <span className="empty-mark"><WaveIcon /></span>
+            <span className="empty-title">No transcript yet</span>
+            <span className="empty-hint">Press record and your conversation will be transcribed here in 30-second segments.</span>
+          </div>
         )}
         {entries.map((entry, i) => (
           <div key={`${entry.isoTime}-${i}`} style={{ ...s.entry, borderBottom: i < entries.length - 1 ? '1px solid var(--border)' : 'none' }}>
@@ -294,18 +308,17 @@ const TranscriptPanel = forwardRef(function TranscriptPanel(
 export default TranscriptPanel;
 
 const s = {
-  panel: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-xl)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: 'var(--shadow-md)', minHeight: 0 },
-  header: { padding: '16px 18px', borderBottom: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 12, flexShrink: 0 },
+  panel: { background: 'var(--surface-hero)', border: '1px solid var(--border)', borderRadius: 'var(--r-xl)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: 'var(--shadow-md)', minHeight: 0 },
+  header: { padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 12, flexShrink: 0 },
   headerTop: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
-  sectionLabel: { fontFamily: 'var(--font-head)', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-3)' },
+  sectionLabel: { fontFamily: 'var(--font-head)', fontSize: 'var(--fs-micro)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-3)' },
   statusBadge: { display: 'flex', alignItems: 'center', gap: 5 },
-  idleDot: { display: 'inline-block', width: 7, height: 7, background: 'var(--text-3)', borderRadius: '50%' },
+  idleDot: { display: 'inline-block', width: 6, height: 6, background: 'var(--text-3)', borderRadius: '50%' },
   micRow: { display: 'flex', alignItems: 'center', gap: 12 },
-  micBtn: { width: 42, height: 42, borderRadius: '50%', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s', position: 'relative', zIndex: 2, flexShrink: 0 },
-  statusText: { fontSize: 12, color: 'var(--text-2)', lineHeight: 1.4 },
-  body: { flex: 1, overflowY: 'auto', padding: '4px 18px 18px', minHeight: 0 },
-  empty: { marginTop: 20, fontSize: 13, color: 'var(--text-3)', textAlign: 'center' },
-  entry: { padding: '12px 0' },
-  entryTime: { fontSize: 10, fontWeight: 600, color: 'var(--text-3)', letterSpacing: '0.06em', marginBottom: 4 },
-  entryText: { fontSize: 13.5, color: 'var(--text-1)', lineHeight: 1.65 },
+  micBtn: { width: 40, height: 40, borderRadius: '50%', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s ease', position: 'relative', zIndex: 2, flexShrink: 0 },
+  statusText: { fontSize: 'var(--fs-sm)', color: 'var(--text-2)', lineHeight: 1.45 },
+  body: { flex: 1, overflowY: 'auto', padding: '4px 18px 20px', minHeight: 0 },
+  entry: { padding: '14px 0', borderBottom: '1px solid var(--border)' },
+  entryTime: { fontSize: 'var(--fs-micro)', fontWeight: 500, color: 'var(--text-3)', letterSpacing: '0.07em', marginBottom: 5, fontVariantNumeric: 'tabular-nums' },
+  entryText: { fontSize: 'var(--fs-read)', color: 'var(--text-1)', lineHeight: 1.65, letterSpacing: '-0.004em' },
 };

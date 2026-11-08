@@ -108,7 +108,7 @@ export default function HistorySidebar({ open, onClose, onLoadSession }) {
 
 const s = {
   backdrop: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 150, display: 'flex', alignItems: 'stretch' },
-  sidebar: { width: 340, background: 'var(--surface-2)', borderRight: '1px solid var(--border-bright)', display: 'flex', flexDirection: 'column', height: '100%' },
+  sidebar: { width: 340, background: 'var(--surface)', borderRight: '1px solid var(--border-bright)', display: 'flex', flexDirection: 'column', height: '100%' },
   header: { padding: '18px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 },
   title: { fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700, color: 'var(--text-1)' },
   closeBtn: { background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-3)', display: 'flex', padding: 4 },
@@ -121,6 +121,6 @@ const s = {
   cardActions: { display: 'flex', gap: 4 },
   iconBtn: { background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 4, borderRadius: 4, display: 'flex', alignItems: 'center' },
   cardMeta: { display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-3)', fontWeight: 500 },
-  statusDot: { position: 'absolute', top: 10, right: 10, fontSize: 8, fontWeight: 700, textTransform: 'uppercase', color: '#fff', padding: '2px 6px', borderRadius: 'var(--r-pill)', letterSpacing: '0.08em' },
+  statusDot: { position: 'absolute', top: 10, right: 10, fontSize: 8, fontWeight: 700, textTransform: 'uppercase', color: '#fff', padding: '2px 6px', borderRadius: 'var(--r-sm)', letterSpacing: '0.08em' },
   editInput: { flex: 1, background: 'var(--surface)', border: '1px solid var(--brand)', borderRadius: 6, padding: '3px 8px', fontSize: 13, color: 'var(--text-1)', outline: 'none', fontFamily: 'var(--font-body)' },
 };
