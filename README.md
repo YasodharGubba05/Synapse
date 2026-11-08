@@ -202,45 +202,19 @@ Groq API key in the `X-Groq-API-Key` request header. Only `/`, `/api/health`,
 
 ### 1. Authentication
 
-#### `POST /api/auth/register`
-Creates an account and signs it in, returning `synapse_access`,
-`synapse_refresh`, and `synapse_csrf` cookies.
-*   **Request Payload**:
-    ```json
-    {
-      "email": "you@company.com",
-      "password": "at-least-10-chars-with-a-number-1",
-      "full_name": "Ada Lovelace"
-    }
-    ```
-*   **Success Response (`201 Created`)**:
-    ```json
-    {
-      "user": {
-        "id": "a1b2c3d4-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
-        "email": "you@company.com",
-        "full_name": "Ada Lovelace",
-        "created_at": "2026-06-14T22:15:00Z"
-      },
-      "expires_in": 1800
-    }
-    ```
+Cookie-based; the browser handles the cookies, the client echoes the CSRF token
+in a header. Details of the design are in [System Design](#system-design) above.
 
-#### `POST /api/auth/login`
-Verifies credentials and opens a session; returns the same body as register.
-An unknown email and a wrong password produce the identical `401` message, so
-accounts cannot be enumerated.
+| Endpoint | Purpose |
+|---|---|
+| `POST /api/auth/register` | Create an account and sign in |
+| `POST /api/auth/login` | Sign in to an existing account |
+| `POST /api/auth/refresh` | Rotate the session tokens |
+| `POST /api/auth/logout` | Revoke the session and clear cookies |
+| `GET /api/auth/me` | Current user — restores the session after a refresh |
+| `POST /api/auth/password` | Change password and sign out other devices |
 
-#### `POST /api/auth/refresh`
-Rotates both tokens. Replaying a superseded refresh token revokes every session
-for that account.
-
-#### `POST /api/auth/logout`
-Revokes the server-side session and clears all three cookies.
-
-#### `GET /api/auth/me`
-Returns the signed-in user, or `401`. This is what restores the session after a
-browser refresh.
+Passwords must be at least 10 characters with a letter and a number.
 
 ### 2. Meeting Management
 
