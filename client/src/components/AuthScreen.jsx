@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useAuth } from '../authContext';
+import { BRAND_TAGLINE, LogoChip } from './Logo';
 
 const MIN_PASSWORD_LENGTH = 10;
 
@@ -77,10 +78,10 @@ export default function AuthScreen() {
 
       <form style={s.card} onSubmit={handleSubmit} className="fade-in-up">
         <div style={s.brand}>
-          <div style={s.brandLogo}><span style={s.brandIcon}>⚡</span></div>
+          <LogoChip size={32} markSize={18} />
           <div>
             <span style={s.brandName}>Synapse</span>
-            <span style={s.brandTag}>Live Intelligence</span>
+            <span style={s.brandTag}>{BRAND_TAGLINE}</span>
           </div>
         </div>
 
@@ -229,15 +230,6 @@ const s = {
     flexDirection: 'column',
   },
   brand: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 22 },
-  brandLogo: {
-    width: 30, height: 30,
-    background: 'linear-gradient(180deg, var(--brand) 0%, var(--brand-deep) 100%)',
-    border: '1px solid rgba(255,255,255,0.14)',
-    boxShadow: 'var(--highlight-strong), 0 2px 8px -2px rgba(92,108,232,0.5)',
-    borderRadius: 'var(--r-md)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-  },
-  brandIcon: { fontSize: 15 },
   brandName: { display: 'block', fontFamily: 'var(--font-head)', fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--text-1)', lineHeight: 1.15 },
   brandTag: { display: 'block', fontSize: 9, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-3)', marginTop: 1 },
   heading: { fontFamily: 'var(--font-head)', fontSize: 21, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--text-1)', margin: 0 },

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { AVAILABLE_MODELS, AVAILABLE_PLAYBOOKS, DEFAULT_SESSION_SETTINGS, normalizeSessionSettings } from '../sessionSettings';
 import { useAuth } from '../authContext';
 import { fetchAvailableModels } from '../api';
+import { BRAND_TAGLINE, LogoChip } from './Logo';
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -150,12 +151,10 @@ export default function Navbar({ settings, onSaveSettings, onExportSession, canE
       <nav style={s.navbar}>
         {/* Brand */}
         <div style={s.brand}>
-          <div style={s.brandLogo}>
-            <span style={s.brandIcon}>⚡</span>
-          </div>
+          <LogoChip size={30} markSize={17} />
           <div>
             <span style={s.brandName}>Synapse</span>
-            <span style={s.brandTag}>Live Intelligence</span>
+            <span style={s.brandTag}>{BRAND_TAGLINE}</span>
           </div>
         </div>
 
@@ -240,15 +239,6 @@ const s = {
     flexShrink: 0,
   },
   brand: { display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 },
-  brandLogo: {
-    width: 30, height: 30,
-    background: 'linear-gradient(180deg, var(--brand) 0%, var(--brand-deep) 100%)',
-    border: '1px solid rgba(255,255,255,0.14)',
-    boxShadow: 'var(--highlight-strong), 0 2px 8px -2px rgba(92,108,232,0.5)',
-    borderRadius: 'var(--r-md)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-  },
-  brandIcon: { fontSize: 15 },
   brandName: { display: 'block', fontFamily: 'var(--font-head)', fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--text-1)', lineHeight: 1.15 },
   brandTag: { display: 'block', fontSize: 9, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-3)', marginTop: 1 },
   playbookWrap: { display: 'flex', alignItems: 'center', gap: 2, background: 'var(--fill-sunken)', padding: '3px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.3)' },

@@ -7,6 +7,7 @@ import LiveSuggestionsPanel from './components/LiveSuggestionsPanel';
 import WorkspacePanel from './components/WorkspacePanel';
 import HistorySidebar from './components/HistorySidebar';
 import AuthScreen from './components/AuthScreen';
+import { LogoChip } from './components/Logo';
 import {
   exportSessionAsJson, fetchIntelligence, startMeeting, endMeeting, warmupBackend,
   patchActionItemStatus, deleteActionItemApi, saveTranscriptEntry,
@@ -303,7 +304,7 @@ function Workspace() {
 function AuthLoadingScreen() {
   return (
     <div style={loadingStyles.page}>
-      <div style={loadingStyles.logo}><span style={{ fontSize: 17 }}>⚡</span></div>
+      <LogoChip size={40} markSize={22} />
       <div style={loadingStyles.bar}><div className="shimmer-loading" style={{ height: 4, borderRadius: 4 }} /></div>
       <span style={loadingStyles.label}>Restoring your session…</span>
     </div>
@@ -315,13 +316,6 @@ const loadingStyles = {
     height: '100vh', display: 'flex', flexDirection: 'column',
     alignItems: 'center', justifyContent: 'center', gap: 16,
     background: 'var(--bg)',
-  },
-  logo: {
-    width: 38, height: 38, borderRadius: 'var(--r-md)',
-    background: 'linear-gradient(180deg, var(--brand) 0%, var(--brand-deep) 100%)',
-    border: '1px solid rgba(255,255,255,0.14)',
-    boxShadow: 'var(--highlight-strong), 0 4px 16px -4px rgba(92,108,232,0.5)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
   bar: { width: 160 },
   label: { fontSize: 12, color: 'var(--text-3)', letterSpacing: '0.04em' },
