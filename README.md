@@ -1,5 +1,13 @@
 # Synapse — Live Meeting Intelligence Platform
 
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)
+![React 19](https://img.shields.io/badge/React_19-20232A?style=flat-square&logo=react&logoColor=61DAFB)
+![Groq LPU](https://img.shields.io/badge/Groq_LPU-F55C5C?style=flat-square&logo=openai&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)
+![Python 3.13](https://img.shields.io/badge/Python_3.13-3776AB?style=flat-square&logo=python&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-132_passing-success?style=flat-square)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)
+
 **🔗 Live App: [synapse-two-kappa.vercel.app](https://synapse-two-kappa.vercel.app)**  ·  API: [synapse-backend-dhuv.onrender.com](https://synapse-backend-dhuv.onrender.com/healthz)
 
 Synapse is a premium, real-time meeting copilot and intelligence platform that listens to live conversations, handles automated transcription, extracts action items and key decisions, runs real-time sentiment analysis, and provides a context-aware AI assistant. It is built for modern teams that need active meeting synthesis rather than passive posthumous review.
@@ -20,7 +28,7 @@ The system is structured as a robust **FastAPI backend** connected to **Groq's h
 * **Context-Aware Memory**: Feeds historical transcript slices, prior suggestions, meeting memory notes, and silence data back into the suggestion engine to avoid repetition and follow unresolved conversational threads.
 
 ### 📋 Structured Workspace Board
-* **Action Items Tracker**: Automatically extracts tasks, assignees, and priorities (High, Medium, Low) from conversation flows, allowing interactive status updates (pending/completed) and removal, fully synced to SQLite.
+* **Action Items Tracker**: Automatically extracts tasks, assignees, and priorities (High, Medium, Low) from conversation flows, allowing interactive status updates (pending/completed) and removal, fully synced to the database.
 * **Key Decisions Feed**: Aggregates agreements made during the meeting.
 * **NLP Dashboards**: Visualizes real-time meeting sentiment (Positive, Constructive, Neutral, Conflicted) and surfaces key conversational tags.
 
@@ -31,7 +39,7 @@ The system is structured as a robust **FastAPI backend** connected to **Groq's h
 * **Separate from Groq Credentials**: Account authentication and the Groq API key remain entirely independent systems.
 
 ### 💾 Persistent Meeting History Hub
-* **SQLite Relational Storage**: Full ORM representation mapping sessions, transcripts, suggestion batches, chat messages, action items, and decisions.
+* **Relational Storage**: Full ORM representation mapping sessions, transcripts, suggestion batches, chat messages, action items, and decisions — on SQLite locally, PostgreSQL in production.
 * **History Sidebar Browser**: Search, load, rename, or purge past meeting records directly through the interface.
 * **Session Export**: Allows exporting complete session histories in standard JSON format.
 
@@ -43,13 +51,42 @@ The system is structured as a robust **FastAPI backend** connected to **Groq's h
 * **FastAPI**: Core API layer, leveraging asynchronous execution contexts.
 * **SQLAlchemy 2.0, SQLite & PostgreSQL**: Relational layer driven by `DATABASE_URL` — SQLite for local development, managed PostgreSQL in production — with Alembic migrations.
 * **Argon2id & Signed Session Tokens**: Password hashing and cookie-based authentication with rotating refresh tokens and CSRF protection.
-* **AioHTTP / HTTPX**: Non-blocking client for executing high-speed requests.
-* **Groq LPU Client**: High-throughput transcription via Whisper Large and LLM interactions using Llama 3 models.
+* **HTTPX**: Non-blocking async client with a shared connection pool for Groq requests, including SSE streaming.
+* **Groq LPU Client**: High-throughput transcription via Whisper Large v3 and reasoning through Llama 3.3 70B.
 
 ### Frontend
 * **React 19 & Vite**: Ultra-fast hot-module reloading (HMR) and lightweight state orchestration.
 * **Web Audio API**: Frequency visualization.
 * **Vanilla CSS**: Clean, responsive layout utilizing modern CSS variables, animations, and premium glassmorphic accents.
+
+---
+
+## Project Structure
+
+```
+synapse/
+├── backend/
+│   ├── database/          # SQLAlchemy models, connection, CRUD repository
+│   ├── migrations/        # Alembic revisions (0001_baseline, 0002_auth)
+│   ├── models/            # Pydantic request/response schemas
+│   ├── prompts/           # Playbooks, copilot and NLP system prompts
+│   ├── routers/           # auth · transcribe · suggestions · chat · meeting · history · intelligence
+│   ├── security/          # Argon2id hashing, tokens, cookies, rate limiting
+│   ├── services/          # Async Groq client wrapper
+│   ├── tests/             # Pytest suite
+│   ├── cli.py             # Operational CLI (migrate, users, legacy data)
+│   ├── config.py          # Environment-driven settings
+│   ├── dependencies.py    # Auth, CSRF, rate limit and ownership guards
+│   └── main.py            # App entry point, middleware, lifespan
+├── client/
+│   └── src/
+│       ├── components/    # AuthScreen · Navbar · TranscriptPanel · LiveSuggestions · Workspace · History
+│       ├── api.js         # Fetch wrappers, auth and SSE decoding
+│       ├── App.jsx        # Route gate and master coordinator
+│       └── authContext.js # Auth context and useAuth hook
+├── render.yaml            # Render blueprint (backend + PostgreSQL)
+└── SYSTEM_DESIGN.md       # Architectural specifications and trade-offs
+```
 
 ---
 
@@ -221,6 +258,17 @@ Register on the sign-in screen, or from the command line with `python -m backend
 ### 4. API Key Configuration
 No server-side configuration is needed for the Groq key. Open the application in your browser, click **Settings** on the navigation bar, and input your **Groq API Key**. The key is held safely inside your browser's local `sessionStorage` and transmitted in request headers (`X-Groq-API-Key`) so that keys are never stored on shared servers. It is not part of your account and is cleared when you sign out.
 
+### 5. Running the Tests
+```bash
+# Backend suite (132 tests: auth, isolation, security, AI pipeline, workspace)
+pip install -r backend/requirements-dev.txt
+cd backend && python -m pytest
+
+# Frontend lint and production build
+cd client && npm run lint && npm run build
+```
+The backend suite runs against SQLite by default. Set `TEST_DATABASE_URL` to a PostgreSQL connection string to run the same suite against Postgres.
+
 ---
 
 ## Deployment
@@ -231,7 +279,27 @@ Running live at **[synapse-two-kappa.vercel.app](https://synapse-two-kappa.verce
 * **Python version pin**: `PYTHON_VERSION=3.13.5` is required. Render's default for new services is now 3.14.x, where `pydantic-core` and `psycopg-binary` have no wheels and the build fails.
 * **Migrations** run on startup, serialised across instances by a PostgreSQL advisory lock.
 * **Health probes**: `/healthz` is dependency-free (so a database blip cannot trigger a deploy rollback loop) and reports `configuration_warnings`; `/readyz` checks database reachability.
-* **Required environment variables**: `SECRET_KEY`, `DATABASE_URL`, `FRONTEND_URL`, `ALLOWED_ORIGINS`, `PYTHON_VERSION`. See `backend/.env.example` for the full list.
+
+### Environment Variables
+
+| Variable | Required | Default | Purpose |
+| :--- | :--- | :--- | :--- |
+| `SECRET_KEY` | Production | random per boot | Signs session tokens. Rotating it signs everyone out. |
+| `DATABASE_URL` | Production | `sqlite:///./synapse.db` | `postgres://` and `postgresql://` are both normalised. |
+| `FRONTEND_URL` | Production | — | Deployed frontend origin, appended to the CORS allowlist. |
+| `ALLOWED_ORIGINS` | Production | localhost dev origins | Comma-separated exact origins. Never `*`. |
+| `PYTHON_VERSION` | Render | — | Pinned to `3.13.5` (see above). |
+| `ENVIRONMENT` | No | `development` | `production` enables HSTS, hides docs, requires `SECRET_KEY`. |
+| `ACCESS_TOKEN_MINUTES` / `REFRESH_TOKEN_DAYS` | No | `30` / `14` | Session lifetimes. |
+| `MAX_UPLOAD_BYTES` | No | `26214400` | Audio upload cap (25 MB). |
+| `LOGIN_RATE_LIMIT` / `API_RATE_LIMIT` | No | `10` / `240` | Throttles per window. |
+
+See `backend/.env.example` for the complete list with defaults.
 
 > Render's free PostgreSQL plan expires 30 days after creation, and the free web tier sleeps when idle, so the first request after a pause takes a few seconds.
 
+---
+
+## License
+
+Released under the [MIT License](https://opensource.org/licenses/MIT).
