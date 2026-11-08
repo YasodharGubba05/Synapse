@@ -197,7 +197,7 @@ export async function fetchSuggestions(payload) {
   const response = await authedFetch('/suggestions', {
     method: 'POST', headers: buildHeaders(true), body: JSON.stringify(payload),
   });
-  if (!response.ok) { const detail = await response.text(); throw new Error(detail || `Suggestions failed (${response.status})`); }
+  if (!response.ok) throw new Error(await failureMessage(response, `Suggestions failed (${response.status})`));
   return response.json();
 }
 
@@ -205,7 +205,7 @@ export async function fetchIntelligence(payload) {
   const response = await authedFetch('/intelligence', {
     method: 'POST', headers: buildHeaders(true), body: JSON.stringify(payload),
   });
-  if (!response.ok) { const detail = await response.text(); throw new Error(detail || `Intelligence failed (${response.status})`); }
+  if (!response.ok) throw new Error(await failureMessage(response, `Intelligence failed (${response.status})`));
   return response.json();
 }
 
@@ -220,7 +220,7 @@ export async function startMeeting(payload) {
   const response = await authedFetch('/meeting/start', {
     method: 'POST', headers: buildHeaders(true), body: JSON.stringify(payload),
   });
-  if (!response.ok) { const detail = await response.text(); throw new Error(detail || `Meeting start failed (${response.status})`); }
+  if (!response.ok) throw new Error(await failureMessage(response, `Meeting start failed (${response.status})`));
   return response.json();
 }
 
@@ -228,7 +228,7 @@ export async function endMeeting(payload) {
   const response = await authedFetch('/meeting/end', {
     method: 'POST', headers: buildHeaders(true), body: JSON.stringify(payload),
   });
-  if (!response.ok) { const detail = await response.text(); throw new Error(detail || `Meeting end failed (${response.status})`); }
+  if (!response.ok) throw new Error(await failureMessage(response, `Meeting end failed (${response.status})`));
   return response.json();
 }
 
@@ -242,7 +242,7 @@ export async function streamChat(payload, onToken) {
   const response = await authedFetch('/chat', {
     method: 'POST', headers: buildHeaders(true), body: JSON.stringify(payload),
   });
-  if (!response.ok) { const detail = await response.text(); throw new Error(detail || `Chat failed (${response.status})`); }
+  if (!response.ok) throw new Error(await failureMessage(response, `Chat failed (${response.status})`));
   if (!response.body) throw new Error('Streaming response body is missing.');
 
   const reader = response.body.getReader();
