@@ -105,7 +105,7 @@ const TranscriptPanel = forwardRef(function TranscriptPanel(
   const segmentChunksRef = useRef([]);
   const manualFlushResolveRef = useRef(null);
 
-  const SEGMENT_DURATION_MS = 15000; // 15-second segments for faster feedback
+  const SEGMENT_DURATION_MS = 30000; // 30-second capture segments
 
   const getRecorderMimeType = () => {
     const candidates = [
@@ -116,7 +116,6 @@ const TranscriptPanel = forwardRef(function TranscriptPanel(
       'audio/ogg',
     ];
     const supported = candidates.find(m => MediaRecorder.isTypeSupported(m));
-    console.log('[Synapse] Selected mimeType:', supported || '(browser default)');
     return supported || '';
   };
 
@@ -125,24 +124,19 @@ const TranscriptPanel = forwardRef(function TranscriptPanel(
   };
 
   const sendSegmentForTranscription = async (audioBlob) => {
-    if (!audioBlob || audioBlob.size < 500) {
-      console.warn('[Synapse] Skipping tiny blob:', audioBlob?.size, 'bytes');
-      return false;
-    }
+    if (!audioBlob || audioBlob.size < 500) return false;
     try {
-      console.log('[Synapse] Sending blob for transcription:', audioBlob.size, 'bytes, type:', audioBlob.type);
       setStatusText('Transcribing...');
       const result = await transcribeAudioBlob(audioBlob);
       const text = result?.text || '';
-      console.log('[Synapse] Transcription result:', JSON.stringify(text));
       if (text.trim()) {
         silenceStreakRef.current = 0;
         onTranscriptChunk(text);
-        setStatusText('Recording live · capturing every 15s');
+        setStatusText('Recording live · capturing every 30s');
         return true;
       }
       silenceStreakRef.current += 1;
-      onSilencePeriod?.({ streakCount: silenceStreakRef.current, secondsSilent: silenceStreakRef.current * 15 });
+      onSilencePeriod?.({ streakCount: silenceStreakRef.current, secondsSilent: silenceStreakRef.current * SEGMENT_DURATION_MS / 1000 });
       setStatusText('No speech detected in last segment');
       return false;
     } catch (err) {
@@ -165,18 +159,13 @@ const TranscriptPanel = forwardRef(function TranscriptPanel(
 
     // Collect ALL chunks in ondataavailable — called once on stop (no timeslice)
     recorder.ondataavailable = (e) => {
-      if (e.data && e.data.size > 0) {
-        segmentChunksRef.current.push(e.data);
-        console.log('[Synapse] ondataavailable chunk:', e.data.size, 'bytes');
-      }
+      if (e.data && e.data.size > 0) segmentChunksRef.current.push(e.data);
     };
 
     recorder.onstop = async () => {
-      console.log('[Synapse] Segment stopped. Chunks:', segmentChunksRef.current.length);
       const effectiveMime = recorder.mimeType || mimeType || 'audio/webm';
       const blob = new Blob(segmentChunksRef.current, { type: effectiveMime });
       segmentChunksRef.current = [];
-      console.log('[Synapse] Assembled blob:', blob.size, 'bytes, type:', blob.type);
       const hadTranscript = await sendSegmentForTranscription(blob);
       if (manualFlushResolveRef.current) { manualFlushResolveRef.current(hadTranscript); manualFlushResolveRef.current = null; }
       if (isRecordingRef.current && streamRef.current) startRecorderSegment(streamRef.current);
@@ -191,13 +180,9 @@ const TranscriptPanel = forwardRef(function TranscriptPanel(
     // Start WITHOUT timeslice — this ensures ondataavailable fires ONCE on stop
     // with a complete, valid audio container (not fragmented chunks).
     recorder.start();
-    console.log('[Synapse] Recording segment started. mimeType:', recorder.mimeType);
     clearSegmentTimeout();
     segmentTimeoutRef.current = setTimeout(() => {
-      if (recorder.state === 'recording') {
-        console.log('[Synapse] Segment timeout reached — stopping recorder');
-        recorder.stop();
-      }
+      if (recorder.state === 'recording') recorder.stop();
     }, SEGMENT_DURATION_MS);
   };
 
@@ -248,7 +233,7 @@ const TranscriptPanel = forwardRef(function TranscriptPanel(
       setIsRecording(true);
       setLiveStream(stream);
       onRecordingChange?.(true);
-      setStatusText('Recording live · capturing every 15s');
+      setStatusText('Recording live · capturing every 30s');
       startRecorderSegment(stream);
     } catch {
       isRecordingRef.current = false;

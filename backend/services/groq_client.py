@@ -4,6 +4,7 @@ import httpx
 from fastapi import HTTPException
 
 GROQ_BASE = "https://api.groq.com/openai/v1"
+MAX_ERROR_DETAIL_CHARS = 600
 
 _client: Optional[httpx.AsyncClient] = None
 
@@ -22,6 +23,18 @@ async def close_http_client() -> None:
         _client = None
 
 
+def redact_api_key(text: str, api_key: str) -> str:
+    """Strip the caller's Groq key out of anything we echo back or log."""
+    cleaned = text or ""
+    if api_key:
+        cleaned = cleaned.replace(api_key, "[redacted]")
+    return cleaned
+
+
+def _safe_error_detail(body: str, api_key: str) -> str:
+    return redact_api_key((body or "")[:MAX_ERROR_DETAIL_CHARS], api_key)
+
+
 def _build_auth_headers(api_key: str, json_payload: bool = True) -> dict[str, str]:
     headers = {"Authorization": f"Bearer {api_key}"}
     if json_payload:
@@ -37,7 +50,10 @@ async def groq_post(endpoint: str, api_key: str, payload: dict[str, Any]) -> dic
         json=payload,
     )
     if response.status_code != 200:
-        raise HTTPException(status_code=response.status_code, detail=response.text)
+        raise HTTPException(
+            status_code=response.status_code,
+            detail=_safe_error_detail(response.text, api_key),
+        )
     return response.json()
 
 
@@ -54,7 +70,10 @@ async def groq_post_multipart(
         data=data,
     )
     if response.status_code != 200:
-        raise HTTPException(status_code=response.status_code, detail=response.text)
+        raise HTTPException(
+            status_code=response.status_code,
+            detail=_safe_error_detail(response.text, api_key),
+        )
     return response.json()
 
 
@@ -71,7 +90,10 @@ async def iter_groq_chat_stream(
     ) as response:
         if response.status_code != 200:
             detail = await response.aread()
-            raise HTTPException(status_code=response.status_code, detail=detail.decode("utf-8", errors="replace"))
+            raise HTTPException(
+                status_code=response.status_code,
+                detail=_safe_error_detail(detail.decode("utf-8", errors="replace"), api_key),
+            )
 
         async for line in response.aiter_lines():
             if line.startswith("data: "):

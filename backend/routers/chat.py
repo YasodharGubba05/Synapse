@@ -1,14 +1,20 @@
-from fastapi import APIRouter, Depends, Header
+import json
+import logging
+
+from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from backend.database.connection import get_db
 from backend.database import crud
+from backend.database.models import User
+from backend.dependencies import get_current_user, require_owned_session
 from backend.models.schemas import ChatRequest
 from backend.prompts.defaults import CHAT_MODEL, DEFAULT_CHAT_SYSTEM, DEFAULT_DETAIL_SYSTEM
-from backend.services.groq_client import iter_groq_chat_stream
+from backend.services.groq_client import iter_groq_chat_stream, redact_api_key
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 def _append_optional_context(system_prompt: str, tag: str, value: str | None) -> str:
@@ -22,7 +28,12 @@ async def chat(
     body: ChatRequest,
     x_groq_api_key: str = Header(..., alias="X-Groq-API-Key"),
     db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
+    # A session_id may only be used by the account that owns that meeting.
+    if body.session_id:
+        require_owned_session(db, user, body.session_id)
+
     words = body.full_transcript.split()[-body.context_window:]
     transcript = " ".join(words)
     model = body.model or CHAT_MODEL
@@ -54,9 +65,19 @@ async def chat(
 
     async def stream_and_save():
         full_response = []
-        async for chunk in iter_groq_chat_stream(x_groq_api_key, payload):
-            full_response.append(chunk)
-            yield chunk
+        try:
+            async for chunk in iter_groq_chat_stream(x_groq_api_key, payload):
+                full_response.append(chunk)
+                yield chunk
+        except HTTPException as exc:
+            # The 200 status and headers are already on the wire by now, so an
+            # upstream failure cannot become an HTTP error response. Emit it as
+            # an SSE frame instead of letting the connection die silently.
+            detail = redact_api_key(str(exc.detail), x_groq_api_key)[:200]
+            logger.warning("Chat stream failed upstream: HTTP %s - %s", exc.status_code, detail)
+            yield "data: " + json.dumps({"error": {"status": exc.status_code, "message": detail}}) + "\n\n"
+            yield "data: [DONE]\n\n"
+            return
         # Save assistant response to DB
         if body.session_id:
             import json as _json

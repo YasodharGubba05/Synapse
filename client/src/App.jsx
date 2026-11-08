@@ -6,20 +6,23 @@ import TranscriptPanel from './components/TranscriptPanel';
 import LiveSuggestionsPanel from './components/LiveSuggestionsPanel';
 import WorkspacePanel from './components/WorkspacePanel';
 import HistorySidebar from './components/HistorySidebar';
+import AuthScreen from './components/AuthScreen';
 import {
   exportSessionAsJson, fetchIntelligence, startMeeting, endMeeting, warmupBackend,
-  patchActionItemStatus, deleteActionItemApi,
+  patchActionItemStatus, deleteActionItemApi, saveTranscriptEntry,
 } from './api';
 import { formatSessionTimestamp, loadSessionSettings, saveSessionSettings } from './sessionSettings';
+import { useAuth } from './authContext';
 
 let _actionIdCounter = 1;
 
-export default function App() {
+function Workspace() {
   const transcriptPanelRef = useRef(null);
   const nextSuggestionBatchIdRef = useRef(1);
   const startupWarmupSentRef = useRef(false);
   const lastApiKeyRef = useRef('');
   const intelligenceTimerRef = useRef(null);
+  const sessionIdRef = useRef(null);
 
   const [settings, setSettings] = useState(loadSessionSettings);
   const [pendingMessage, setPendingMessage] = useState(null);
@@ -39,6 +42,10 @@ export default function App() {
   const [keywords, setKeywords] = useState([]);
 
   const hasApiKey = settings.apiKey.trim().length > 0;
+
+  // Mirrored into a ref so the transcript callback can read the live
+  // session id without being re-created on every change.
+  useEffect(() => { sessionIdRef.current = sessionId; }, [sessionId]);
 
   // Apply theme to document
   useEffect(() => {
@@ -91,6 +98,16 @@ export default function App() {
     setSilenceStreakCount(0);
     setTranscriptEntries(prev => [...prev, { time: ts.label, isoTime: ts.iso, text: trimmed, kind: 'speech' }]);
     setRefreshRequest({ token: Date.now(), source: 'auto' });
+
+    // Persist it so the meeting still has its transcript in history.
+    // Fire-and-forget: the panel already shows the text, and a failed
+    // save must never interrupt a live recording.
+    const activeSessionId = sessionIdRef.current;
+    if (activeSessionId) {
+      saveTranscriptEntry(activeSessionId, {
+        text: trimmed, time: ts.label, isoTime: ts.iso, kind: 'speech',
+      }).catch(() => {});
+    }
   }, []);
 
   const handleSilencePeriod = useCallback(({ streakCount, secondsSilent }) => {
@@ -136,7 +153,10 @@ export default function App() {
         setActionItems(prev => {
           const existing = new Set(prev.map(a => a.task));
           const newOnes = data.action_items.filter(a => !existing.has(a.task)).map(a => ({
-            id: `local-${_actionIdCounter++}`, task: a.task, assignee: a.assignee, priority: a.priority, status: 'pending',
+            // Use the database id when the backend persisted the item; only
+            // fall back to a local id for an unsaved (no session) meeting.
+            id: a.id || `local-${_actionIdCounter++}`,
+            task: a.task, assignee: a.assignee, priority: a.priority, status: 'pending',
           }));
           return [...prev, ...newOnes];
         });
@@ -276,4 +296,51 @@ export default function App() {
       </div>
     </div>
   );
+}
+
+
+/** Shown while the cookie session is being resolved on first paint. */
+function AuthLoadingScreen() {
+  return (
+    <div style={loadingStyles.page}>
+      <div style={loadingStyles.logo}><span style={{ fontSize: 22 }}>⚡</span></div>
+      <div style={loadingStyles.bar}><div className="shimmer-loading" style={{ height: 4, borderRadius: 4 }} /></div>
+      <span style={loadingStyles.label}>Restoring your session…</span>
+    </div>
+  );
+}
+
+const loadingStyles = {
+  page: {
+    height: '100vh', display: 'flex', flexDirection: 'column',
+    alignItems: 'center', justifyContent: 'center', gap: 16,
+    background: 'var(--bg)',
+  },
+  logo: {
+    width: 44, height: 44, borderRadius: 12,
+    background: 'linear-gradient(135deg, var(--brand), var(--brand-light))',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    boxShadow: 'var(--shadow-brand)',
+  },
+  bar: { width: 160 },
+  label: { fontSize: 12, color: 'var(--text-3)', letterSpacing: '0.04em' },
+};
+
+/**
+ * Route gate. Unauthenticated visitors only ever see the auth screen - the
+ * workspace component is not mounted, and every API call it would make is
+ * refused by the backend independently of this check.
+ */
+export default function App() {
+  const { status } = useAuth();
+
+  // Honour the saved theme on the auth screen too, before the workspace mounts.
+  useEffect(() => {
+    const theme = loadSessionSettings().theme || 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
+  }, []);
+
+  if (status === 'loading') return <AuthLoadingScreen />;
+  if (status !== 'authenticated') return <AuthScreen />;
+  return <Workspace />;
 }

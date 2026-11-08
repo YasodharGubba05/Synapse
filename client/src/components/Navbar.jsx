@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AVAILABLE_MODELS, AVAILABLE_PLAYBOOKS, DEFAULT_SESSION_SETTINGS, normalizeSessionSettings } from '../sessionSettings';
+import { useAuth } from '../authContext';
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -25,6 +26,11 @@ const SettingsIcon = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="3"/>
     <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+  </svg>
+);
+const LogoutIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
   </svg>
 );
 const HistoryIcon = () => (
@@ -95,6 +101,17 @@ function SettingsModal({ initialSettings, onClose, onSave }) {
 
 export default function Navbar({ settings, onSaveSettings, onExportSession, canExport, onToggleHistory }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    setSigningOut(true);
+    try {
+      await logout();
+    } finally {
+      setSigningOut(false);
+    }
+  };
   const activePlaybook = AVAILABLE_PLAYBOOKS.find(p => p.value === settings.playbook) || AVAILABLE_PLAYBOOKS[0];
 
   const handlePlaybookChange = (value) => {
@@ -154,6 +171,25 @@ export default function Navbar({ settings, onSaveSettings, onExportSession, canE
             <SettingsIcon />
             <span>Settings</span>
           </button>
+
+          {user && (
+            <div style={s.account}>
+              <span style={s.avatar} title={user.email}>
+                {(user.full_name || user.email || '?').trim().charAt(0).toUpperCase()}
+              </span>
+              <span style={s.accountEmail}>{user.email}</span>
+              <button
+                className="btn-ghost"
+                onClick={handleLogout}
+                disabled={signingOut}
+                title="Sign out"
+                style={{ ...s.iconBtn, opacity: signingOut ? 0.5 : 1 }}
+              >
+                <LogoutIcon />
+                <span>{signingOut ? 'Signing out…' : 'Sign out'}</span>
+              </button>
+            </div>
+          )}
         </div>
       </nav>
 
@@ -210,6 +246,22 @@ const s = {
   playbookLabel: { display: 'none' },
   actions: { display: 'flex', alignItems: 'center', gap: 6 },
   iconBtn: { padding: '7px 12px', fontSize: 12, gap: 5 },
+  account: {
+    display: 'flex', alignItems: 'center', gap: 8,
+    marginLeft: 6, paddingLeft: 10,
+    borderLeft: '1px solid var(--border)',
+  },
+  avatar: {
+    width: 26, height: 26, borderRadius: '50%',
+    background: 'linear-gradient(135deg, var(--brand), var(--brand-light))',
+    color: '#fff', fontSize: 11, fontWeight: 700,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    flexShrink: 0,
+  },
+  accountEmail: {
+    fontSize: 11.5, color: 'var(--text-2)', fontWeight: 500,
+    maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+  },
   // Modal styles
   backdrop: {
     position: 'fixed', inset: 0,

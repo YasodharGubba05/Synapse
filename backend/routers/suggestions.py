@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 
 from backend.database.connection import get_db
 from backend.database import crud
+from backend.database.models import User
+from backend.dependencies import get_current_user, require_owned_session
 from backend.models.schemas import Suggestion, SuggestionRequest, SuggestionsResponse
 from backend.prompts.defaults import PLAYBOOK_PROMPTS, SUGGESTIONS_MODEL
 from backend.services.groq_client import groq_post
@@ -44,7 +46,11 @@ async def get_suggestions(
     body: SuggestionRequest,
     x_groq_api_key: str = Header(..., alias="X-Groq-API-Key"),
     db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
+    if body.session_id:
+        require_owned_session(db, user, body.session_id)
+
     words = body.transcript_slice.split()[-body.context_window:]
     transcript_slice = " ".join(words)
     previous_suggestions = [item.strip() for item in body.previous_suggestions if item.strip()][:6]

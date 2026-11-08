@@ -28,3 +28,22 @@ pnpm-debug.log*
 .DS_Store
 .vscode/
 .idea/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+backend/.env
+client/.env
+client/.env.*
+!client/.env.example
+
+# Local databases (never commit: these hold user accounts and password hashes)
+*.db
+*.sqlite
+*.sqlite3
+synapse.db
+backend/synapse.db
+
+# Vercel local build output
+.vercel/
