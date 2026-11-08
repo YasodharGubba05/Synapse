@@ -15,10 +15,21 @@ async def transcribe(
     audio_file: UploadFile = File(...),
     x_groq_api_key: str = Header(..., alias="X-Groq-API-Key"),
 ):
+    audio_bytes = b""
     try:
         audio_bytes = await audio_file.read()
-        if not audio_bytes:
+        logger.info(
+            "Transcription request: filename=%s size=%s content_type=%s",
+            audio_file.filename, len(audio_bytes), audio_file.content_type,
+        )
+
+        if not audio_bytes or len(audio_bytes) < 500:
+            logger.warning("Skipping tiny/empty audio blob: %s bytes", len(audio_bytes))
             return {"text": ""}
+
+        if len(audio_bytes) > 25 * 1024 * 1024:
+            logger.warning("Audio blob too large: %s bytes", len(audio_bytes))
+            return {"text": "", "error": "Audio file too large (max 25 MB)"}
 
         content_type = (audio_file.content_type or "audio/webm").split(";")[0].strip().lower()
 
@@ -33,14 +44,21 @@ async def transcribe(
             },
             data={"model": TRANSCRIPTION_MODEL, "response_format": "json"},
         )
-        return {"text": result.get("text", "")}
+        text = result.get("text", "")
+        logger.info("Transcription OK: %r", (text[:100] + "…") if len(text) > 100 else text)
+        return {"text": text}
+
     except HTTPException as exc:
         detail = str(exc.detail)
-        if exc.status_code == 400 and "could not process file" in detail:
-            logger.warning("Skipping undecodable audio chunk (%s bytes, %s)", len(audio_bytes), audio_file.content_type)
-        else:
-            logger.exception("Transcription request failed")
-        return {"text": ""}
+        logger.warning(
+            "Groq transcription HTTP %s — %s (file=%s bytes=%s type=%s)",
+            exc.status_code, detail[:400],
+            audio_file.filename, len(audio_bytes), audio_file.content_type,
+        )
+        return {"text": "", "error": detail[:200]}
     except Exception:
-        logger.exception("Transcription failed")
+        logger.exception(
+            "Transcription failed unexpectedly (file=%s bytes=%s)",
+            audio_file.filename, len(audio_bytes),
+        )
         return {"text": ""}

@@ -31,8 +31,14 @@ export async function transcribeAudioBlob(audioBlob) {
   const extension = getAudioExtensionFromMimeType(audioBlob?.type);
   formData.append('audio_file', audioBlob, `meeting-audio.${extension}`);
   const response = await fetch(`${API_BASE}/transcribe`, { method: 'POST', headers: buildHeaders(false), body: formData });
-  if (!response.ok) throw new Error(`Transcription failed (${response.status})`);
-  return response.json();
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '');
+    throw new Error(`Transcription failed (${response.status}): ${detail}`);
+  }
+  const data = await response.json();
+  // Surface any error message from the backend (e.g. Groq API rejection reason)
+  if (data.error) console.warn('[Synapse] Backend transcription error:', data.error);
+  return data;
 }
 
 export async function fetchSuggestions(payload) {
