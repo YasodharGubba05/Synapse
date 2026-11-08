@@ -84,7 +84,17 @@ function AudioVisualizer({ stream, isRecording }) {
       ref={canvasRef}
       width={320}
       height={48}
-      style={{ width: '100%', height: 48, borderRadius: 8, background: 'var(--surface-3)', display: 'block' }}
+      style={{
+        width: '100%',
+        height: 48,
+        borderRadius: 'var(--r-md)',
+        background: 'var(--fill-sunken)',
+        boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.35)',
+        border: '1px solid var(--border)',
+        display: 'block',
+        opacity: isRecording ? 1 : 0.55,
+        transition: 'opacity var(--dur) var(--ease)',
+      }}
     />
   );
 }
@@ -271,8 +281,13 @@ const TranscriptPanel = forwardRef(function TranscriptPanel(
             <button
               style={{
                 ...s.micBtn,
-                background: isRecording ? 'var(--accent-rose)' : 'var(--action)',
-                color: isRecording ? '#1A0509' : 'var(--action-text)',
+                background: isRecording
+                  ? 'linear-gradient(180deg, #FF7D90 0%, #E8445E 100%)'
+                  : 'var(--action-fill)',
+                color: isRecording ? '#fff' : 'var(--action-text)',
+                boxShadow: isRecording
+                  ? 'var(--highlight-strong), 0 2px 10px -2px rgba(232,68,94,0.55)'
+                  : 'var(--highlight-strong), 0 2px 8px -3px rgba(0,0,0,0.6)',
               }}
               onClick={isRecording ? stopRecording : startRecording}
               title={isRecording ? 'Stop recording' : 'Start recording'}
@@ -308,7 +323,7 @@ const TranscriptPanel = forwardRef(function TranscriptPanel(
 export default TranscriptPanel;
 
 const s = {
-  panel: { background: 'var(--surface-hero)', border: '1px solid var(--border)', borderRadius: 'var(--r-xl)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: 'var(--shadow-md)', minHeight: 0 },
+  panel: { background: 'var(--fill-hero)', border: '1px solid var(--border-bright)', borderRadius: 'var(--r-xl)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: 'var(--highlight-strong), var(--shadow-md)', minHeight: 0 },
   header: { padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 12, flexShrink: 0 },
   headerTop: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
   sectionLabel: { fontFamily: 'var(--font-head)', fontSize: 'var(--fs-micro)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-3)' },

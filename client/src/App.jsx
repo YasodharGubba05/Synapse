@@ -318,8 +318,9 @@ const loadingStyles = {
   },
   logo: {
     width: 38, height: 38, borderRadius: 'var(--r-md)',
-    background: 'var(--surface-3)',
-    border: '1px solid var(--border-bright)',
+    background: 'linear-gradient(180deg, var(--brand) 0%, var(--brand-deep) 100%)',
+    border: '1px solid rgba(255,255,255,0.14)',
+    boxShadow: 'var(--highlight-strong), 0 4px 16px -4px rgba(92,108,232,0.5)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
   bar: { width: 160 },

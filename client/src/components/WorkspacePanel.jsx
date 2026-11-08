@@ -258,7 +258,7 @@ export default function WorkspacePanel({
 }
 
 const s = {
-  panel: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-xl)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: 'var(--shadow-md)', minHeight: 0 },
+  panel: { background: 'var(--fill-panel)', border: '1px solid var(--border)', borderRadius: 'var(--r-xl)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: 'var(--highlight), var(--shadow-md)', minHeight: 0 },
   tabs: { display: 'flex', borderBottom: '1px solid var(--border)', flexShrink: 0 },
   tab: { flex: 1, padding: '14px 10px', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600, color: 'var(--text-3)', transition: 'all 0.2s' },
   tabActive: { color: 'var(--text-1)', borderBottom: '2px solid var(--text-1)', background: 'transparent' },
@@ -266,11 +266,11 @@ const s = {
   chatBody: { flex: 1, overflowY: 'auto', padding: '16px 18px', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 12 },
   bubbleWrap: { display: 'flex' },
   bubble: { maxWidth: '88%', padding: '10px 14px', borderRadius: 'var(--r-md)', lineHeight: 1.6, wordBreak: 'break-word' },
-  bubbleUser: { background: 'var(--action)', color: 'var(--action-text)', fontSize: 'var(--fs-body)', borderTopRightRadius: 4, fontWeight: 500 },
+  bubbleUser: { background: 'var(--action-fill)', color: 'var(--action-text)', boxShadow: '0 1px 2px rgba(0,0,0,0.25)', fontSize: 'var(--fs-body)', borderTopRightRadius: 4, fontWeight: 500 },
   bubbleAssistant: { background: 'var(--surface-2)', color: 'var(--text-1)', fontSize: 13.5, border: '1px solid var(--border)', borderTopLeftRadius: 4 },
   inputArea: { borderTop: '1px solid var(--border)', padding: '12px 16px', display: 'flex', gap: 8, alignItems: 'flex-end', flexShrink: 0 },
-  textarea: { flex: 1, background: 'var(--surface-3)', border: '1px solid var(--border-bright)', borderRadius: 'var(--r-md)', padding: '9px 14px', fontFamily: 'var(--font-body)', fontSize: 13.5, color: 'var(--text-1)', resize: 'none', outline: 'none', minHeight: 40, maxHeight: 120, lineHeight: 1.5 },
-  sendBtn: { background: 'var(--action)', color: 'var(--action-text)', border: 'none', borderRadius: 'var(--r-md)', width: 38, height: 38, flexShrink: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s ease' },
+  textarea: { flex: 1, background: 'var(--fill-sunken)', border: '1px solid var(--border-bright)', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.25)', borderRadius: 'var(--r-md)', padding: '9px 14px', fontFamily: 'var(--font-body)', fontSize: 13.5, color: 'var(--text-1)', resize: 'none', outline: 'none', minHeight: 40, maxHeight: 120, lineHeight: 1.5 },
+  sendBtn: { background: 'var(--action-fill)', color: 'var(--action-text)', border: 'none', borderRadius: 'var(--r-md)', width: 38, height: 38, flexShrink: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.3)', transition: 'transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease)' },
   // Board
   board: { flex: 1, overflowY: 'auto', padding: 18, display: 'flex', flexDirection: 'column', gap: 20 },
   section: { display: 'flex', flexDirection: 'column', gap: 10 },
@@ -287,5 +287,5 @@ const s = {
   deleteBtn: { width: 24, height: 24, border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 4, flexShrink: 0 },
   addTaskRow: { display: 'flex', gap: 8, marginTop: 4 },
   addInput: { flex: 1, background: 'var(--surface-3)', border: '1px solid var(--border-bright)', borderRadius: 'var(--r-md)', padding: '8px 12px', fontSize: 13, color: 'var(--text-1)', outline: 'none', fontFamily: 'var(--font-body)' },
-  addBtn: { width: 34, height: 34, background: 'var(--surface-3)', border: '1px solid var(--border-bright)', borderRadius: 'var(--r-md)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-1)', flexShrink: 0 },
+  addBtn: { width: 34, height: 34, background: 'var(--fill-raised)', boxShadow: 'var(--highlight)', border: '1px solid var(--border-bright)', borderRadius: 'var(--r-md)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-1)', flexShrink: 0 },
 };

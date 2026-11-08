@@ -107,14 +107,14 @@ export default function HistorySidebar({ open, onClose, onLoadSession }) {
 }
 
 const s = {
-  backdrop: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 150, display: 'flex', alignItems: 'stretch' },
-  sidebar: { width: 340, background: 'var(--surface)', borderRight: '1px solid var(--border-bright)', display: 'flex', flexDirection: 'column', height: '100%' },
+  backdrop: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', zIndex: 150, display: 'flex', alignItems: 'stretch' },
+  sidebar: { width: 340, background: 'var(--fill-panel)', borderRight: '1px solid var(--border-bright)', boxShadow: 'var(--highlight), var(--shadow-lg)', display: 'flex', flexDirection: 'column', height: '100%' },
   header: { padding: '18px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 },
   title: { fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700, color: 'var(--text-1)' },
   closeBtn: { background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-3)', display: 'flex', padding: 4 },
   body: { flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10 },
   empty: { fontSize: 13, color: 'var(--text-3)', textAlign: 'center', marginTop: 20 },
-  sessionCard: { background: 'var(--surface-3)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: '12px 14px', cursor: 'pointer', transition: 'all 0.2s', position: 'relative' },
+  sessionCard: { background: 'var(--fill-raised)', border: '1px solid var(--border)', boxShadow: 'var(--highlight)', borderRadius: 'var(--r-lg)', padding: '12px 14px', cursor: 'pointer', transition: 'border-color var(--dur) var(--ease), transform var(--dur) var(--ease)', position: 'relative' },
   cardTop: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 },
   playbookIcon: { fontSize: 16, flexShrink: 0 },
   sessionTitle: { flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },

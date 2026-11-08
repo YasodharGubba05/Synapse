@@ -170,7 +170,7 @@ export default function LiveSuggestionsPanel({
 }
 
 const s = {
-  panel: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-xl)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: 'var(--shadow-md)', minHeight: 0 },
+  panel: { background: 'var(--fill-panel)', border: '1px solid var(--border)', borderRadius: 'var(--r-xl)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: 'var(--highlight), var(--shadow-md)', minHeight: 0 },
   header: { padding: '14px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0 },
   headerTop: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   headerControls: { display: 'flex', alignItems: 'center', gap: 8 },

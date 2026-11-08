@@ -18,13 +18,15 @@ export default function SuggestionCard({ type, title, preview, faded = false, on
       onClick={() => onClick?.(`${title}: ${preview}`)}
       onMouseEnter={e => {
         if (!faded) {
-          e.currentTarget.style.borderColor = 'var(--border-bright)';
-          e.currentTarget.style.background = 'var(--surface-3)';
+          e.currentTarget.style.borderColor = 'var(--border-strong)';
+          e.currentTarget.style.transform = 'translateY(-1px)';
+          e.currentTarget.style.boxShadow = 'var(--highlight-strong), 0 6px 18px -8px rgba(0,0,0,0.6)';
         }
       }}
       onMouseLeave={e => {
         e.currentTarget.style.borderColor = 'var(--border)';
-        e.currentTarget.style.background = 'var(--surface-2)';
+        e.currentTarget.style.transform = 'none';
+        e.currentTarget.style.boxShadow = 'var(--highlight)';
       }}
     >
       <div style={{ ...s.tag, background: tag.bg, color: tag.color }}>
@@ -40,12 +42,13 @@ export default function SuggestionCard({ type, title, preview, faded = false, on
 
 const s = {
   card: {
-    background: 'var(--surface-2)',
+    background: 'var(--fill-raised)',
     border: '1px solid var(--border)',
     borderRadius: 'var(--r-lg)',
+    boxShadow: 'var(--highlight)',
     padding: '14px 16px',
     cursor: 'pointer',
-    transition: 'background 0.15s ease, border-color 0.15s ease',
+    transition: 'border-color var(--dur) var(--ease), transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease)',
   },
   tag: {
     display: 'inline-flex', alignItems: 'center', gap: 5,
