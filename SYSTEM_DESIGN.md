@@ -1,225 +1,172 @@
-# Synapse — Technical System Design & Architectural Blueprint
+# Synapse — System Design & Architecture Blueprint
 
-This document provides a detailed breakdown of the architectural blueprints, database designs, technical trade-offs, and scaling guidelines for **Synapse**, a real-time meeting intelligence platform.
-
----
-
-## 1. System Design Principles
-
-The design of Synapse is guided by four core engineering principles:
-
-*   **Low Latency Execution**: Users require feedback quickly during live conversations. Every system interaction—from audio segment ingestion to streaming AI chat response delivery—is optimized to run in sub-second timelines.
-*   **Privacy-by-Design**: User API credentials (such as Groq access tokens) are kept isolated. They are stored only in volatile browser memory and never written to the server's database or permanent storage.
-*   **Local-First Persistence**: Meeting history, action logs, and transcripts are stored in a local relational database to support offline recovery and zero-config setups.
-*   **Modularity & Extensibility**: The prompts, database layers, API routers, and UI components are kept decoupled to simplify swapping components (e.g., switching database engines or LLM providers).
+This document outlines the system architecture, design patterns, and engineering decisions behind **Synapse**, a real-time meeting intelligence platform.
 
 ---
 
-## 2. Global Architecture Diagram
+## 1. System Architecture Overview
 
-The system uses a decoupled frontend client and backend server structure, with data flows managed over HTTP/POST APIs, Server-Sent Events (SSE), and SQLAlchemy ORM operations.
+Synapse is built using a decoupled client-server architecture designed to support near-instantaneous live audio chunking, AI-assisted transcription, periodic context analysis, and Server-Sent Event (SSE) response streaming.
 
 ```mermaid
-sequenceDiagram
-    autonumber
-    actor User as User Microphone
-    participant Browser as React Client (Browser)
-    participant Server as FastAPI Backend
-    participant DB as SQLite (synapse.db)
-    participant Groq as Groq LPU Cloud
+graph TD
 
-    %% Audio and Transcription Pipeline
-    User->>Browser: Raw audio input stream
-    Note over Browser: Web Audio API AnalyserNode<br/>extracts frequency arrays
-    Browser->>Browser: Draw frame to Canvas (no DOM reflows)
-    Note over Browser: MediaRecorder API buffers<br/>audio WebM chunks for 30s
-    Browser->>Server: POST /api/transcribe (audio_file WebM binary + header API Key)
-    Server->>Groq: forward to Whisper-Large-v3
-    Groq-->>Server: return parsed transcript JSON
-    Server-->>Browser: return {"text": "..."}
-    Browser->>Browser: Append text to local timeline state
+%% Frontend Components
+subgraph browser["Browser Client (React/Vite)"]
+    User["User Interface"]
+    MR["MediaRecorder API"]
+    AV["Canvas Visualizer"]
+    State["React State Engine"]
+    SS["sessionStorage"]
+end
 
-    %% DB Session Creation & Persistence
-    Note over Browser: Meeting Session started
-    Browser->>Server: POST /api/meeting/start
-    Server->>DB: create_session (insert MeetingSession model)
-    DB-->>Server: session details committed
-    Server-->>Browser: return session_uuid
+%% Web Proxy
+ViteProxy["Vite Dev Proxy"]
 
-    %% Intelligence Extraction Pipeline
-    Note over Browser: Every 2 chunks received
-    Browser->>Server: POST /api/intelligence (session_id, transcript_slice)
-    Server->>Groq: query Llama-3.3-70b (sentiment, action_items, decisions)
-    Groq-->>Server: return structured JSON
-    Server->>DB: save_action_item & save_decision
-    DB-->>Server: data committed
-    Server-->>Browser: return parsed JSON payload
-    Browser->>Browser: Update UI boards (Deduplicated)
+%% Backend Server
+subgraph backend["FastAPI Backend"]
+    Main["main.py Lifespan"]
+    RouterT["Transcribe Router"]
+    RouterS["Suggestions Router"]
+    RouterC["Chat Router"]
+    RouterH["History Router"]
+    RouterI["Intelligence Router"]
+    DB_Conn["SQLAlchemy Connection Engine"]
+end
 
-    %% Copilot Chat SSE Streaming
-    Browser->>Server: POST /api/chat (session_id, chat_history, transcript)
-    Server->>Groq: query Llama-3.1-8b-instant (Stream mode)
-    Groq-->>Server: stream token packets
-    Server-->>Browser: stream SSE packets (text/event-stream)
-    Browser->>Browser: Append tokens to chat UI panel
+%% External Services
+subgraph groq["Groq LPU Cloud"]
+    Whisper["Groq Whisper Large v3"]
+    LlamaSug["Llama 3.3 70B Suggestions"]
+    LlamaInt["Llama 3.3 70B NLP Engine"]
+    LlamaChat["Llama 3.1 8B Instant Chat"]
+end
+
+%% Storage
+SQLite[("SQLite: synapse.db")]
+
+%% Data Flow
+User -->|Starts Meeting| MR
+MR -->|Captures Audio| AV
+MR -->|Sends WebM Chunks| State
+
+State -->|POST /api/transcribe| ViteProxy
+State -->|REST API Requests| ViteProxy
+
+ViteProxy -->|Proxy to FastAPI| Main
+
+Main --> RouterT
+Main --> RouterS
+Main --> RouterC
+Main --> RouterH
+Main --> RouterI
+
+RouterT -->|Transcribe| Whisper
+RouterS -->|Generate Suggestions| LlamaSug
+RouterI -->|Extract Intelligence| LlamaInt
+RouterC -->|SSE Chat| LlamaChat
+
+RouterS --> DB_Conn
+RouterC --> DB_Conn
+RouterH --> DB_Conn
+RouterI --> DB_Conn
+
+DB_Conn --> SQLite
+
+SS -->|X-Groq-API-Key| State
 ```
 
 ---
 
-## 3. Technology Selection Justifications
+## 2. Key Architectural Decisions
 
-| Tech Layer | Selection | Evaluated Alternatives | Technical Justification |
-| :--- | :--- | :--- | :--- |
-| **Backend API** | **FastAPI (Python)** | Node.js (Express), Go (Gin) | FastAPI utilizes Python's asynchronous event loop (`async/await`) for high-concurrency non-blocking I/O. This is ideal for streaming Server-Sent Events (SSE) and managing multiple concurrent HTTP requests to external LLM providers. |
-| **Storage Layer** | **SQLite + SQLAlchemy** | PostgreSQL, MongoDB | SQLite stores data in a single file (`synapse.db`), requiring no separate database server. SQLAlchemy ORM abstracts SQL queries, allowing the backend to scale to database clusters like PostgreSQL without code changes. |
-| **AI Inference** | **Groq LPU Cloud** | OpenAI API, Anthropic API | Groq's Language Processing Units (LPUs) provide high token generation speeds (up to 400+ t/s). This keeps latency low for live suggestions and chat responses. |
-| **UI Rendering** | **Canvas API** | CSS/DOM Transitions | Standard SVG or CSS animations for audio visualizers cause frequent layout recalculations, which can slow down React rendering. Drawing frequency grids directly onto an HTML5 Canvas keeps DOM updates independent of visualizer frame rates. |
+### 2.1 Backend Framework: FastAPI
+* **Why**: High-performance asynchronous execution loop, built on top of Starlette and Pydantic. It natively supports Python's `async/await` syntax, which is vital for non-blocking I/O operations (such as forwarding multiple concurrent API requests to external LLM providers and streaming response text token-by-token).
+* **Benefit**: Generates OpenAPI specs automatically and simplifies Server-Sent Event (SSE) responses via FastAPI's streaming handlers.
 
----
+### 2.2 Inference Engine: Groq LPU (Language Processing Unit)
+* **Why**: Live transcription and interactive meeting intelligence require ultra-low latency. Standard cloud-hosted LLM endpoints introduce 1.5s+ TTFT (Time to First Token), which disrupts live conversations. Groq LPUs provide extremely high token generation speeds (up to 400+ tokens/second).
+* **Model Choices**:
+  * **Transcription**: `whisper-large-v3` for high multilingual accuracy.
+  * **Live Suggestions & Intelligence Extraction**: `llama-3.3-70b-versatile` for deep contextual reasoning and structured JSON output.
+  * **Streaming Copilot Chat**: `llama-3.1-8b-instant` to achieve immediate, conversational reply speeds.
 
-## 4. Component Deep Dive
+### 2.3 Storage Layer: SQLite + SQLAlchemy ORM
+* **Why**: Synapse operates as a local meeting assistant. SQLite requires zero configuration, stores data in a single file (`synapse.db`), and requires no external process management. SQLAlchemy provides a robust ORM abstraction, allowing easy transition to multi-tenant architectures (e.g. PostgreSQL) in production.
+* **Concurrency Handling**: SQLite's write lock is mitigated by configuring thread-safety parameters (`connect_args={"check_same_thread": False}`) and mapping database sessions to request contexts through FastAPI dependency injection (`Depends(get_db)`).
 
-### 4.1 Client-Side Audio capture & Visualizer Pipeline
-The client audio pipeline manages microphone access, visual feedback, and segment packaging.
-
-#### MediaRecorder Initialization and Audio Formats
-To ensure cross-browser compatibility (e.g., Safari on iOS, Chrome on macOS), the client detects supported audio formats dynamically:
-```javascript
-const getRecorderMimeType = () => {
-  const candidates = [
-    'audio/webm;codecs=opus', // Standard Chrome/Firefox WebM container
-    'audio/webm',
-    'audio/mp4',              // iOS/Safari AAC container fallback
-    'audio/ogg;codecs=opus'   // Alternative Linux/Firefox fallback
-  ];
-  return candidates.find(m => MediaRecorder.isTypeSupported(m)) || '';
-};
-```
-Audio data is captured in a rolling sequence. Every 30 seconds, the client calls `MediaRecorder.stop()`. This triggers the `onstop` callback, which compiles the recorded audio chunks into a binary blob and starts the next recording segment.
-
-#### Canvas Frequency Rendering
-The microphone stream is routed through the Web Audio API to analyze frequency data:
-$$\text{Microphone Stream} \longrightarrow \text{AudioContext} \longrightarrow \text{AnalyserNode} \longrightarrow \text{FFT Buffer} \longrightarrow \text{Canvas Renderer}$$
-*   **FFT Size**: Configured to `256` to yield 128 frequency bins, which provides a clean visual representation without high processing overhead.
-*   **Animation**: Driven by `requestAnimationFrame`, query results from `analyser.getByteFrequencyData(dataArray)` are drawn as rounded columns on the `<canvas>` using specific colors.
+### 2.4 Client-Side API Key Management (`sessionStorage`)
+* **Why**: API keys are a major security risk if saved in configuration files or backend databases.
+* **Architecture**: Synapse utilizes browser `sessionStorage`. When the user enters their key, it resides in memory for that tab session. Every request to the backend passes this key in the `X-Groq-API-Key` header, meaning keys never sit on the backend's persistent disk or environment variables.
 
 ---
 
-### 4.2 Persistent Database Layer (SQLAlchemy ORM)
+## 3. Data Pipelines & Flow Controls
 
-The relational schema is configured to support cascade deletions, relationship lookups, and session management.
+### 3.1 Audio Capture & Rolling Segment Pipeline
+Traditional transcription architectures record the entire meeting and transcribe it at the end. Synapse uses a **Rolling Segment Pipeline** for active live feedback:
 
-```python
-from sqlalchemy import Column, String, DateTime, ForeignKey, Text, Integer
-from sqlalchemy.orm import relationship
-from backend.database.connection import Base
-
-class MeetingSession(Base):
-    __tablename__ = "meeting_sessions"
-    
-    id = Column(String, primary_key=True, index=True)
-    title = Column(String, default="Untitled Meeting")
-    playbook = Column(String, default="general")
-    started_at = Column(DateTime, nullable=False)
-    ended_at = Column(DateTime, nullable=True)
-    status = Column(String, default="active")
-    meeting_memory = Column(Text, default="")
-
-    # Cascade relationships to ensure database cleanups
-    transcript_entries = relationship("TranscriptEntry", back_populates="session", cascade="all, delete-orphan")
-    suggestions = relationship("SuggestionItem", back_populates="session", cascade="all, delete-orphan")
-    chat_messages = relationship("ChatMessage", back_populates="session", cascade="all, delete-orphan")
-    action_items = relationship("ActionItem", back_populates="session", cascade="all, delete-orphan")
-    decisions = relationship("DecisionItem", back_populates="session", cascade="all, delete-orphan")
 ```
+[Audio Mic Stream] ──> [MediaRecorder (audio/webm)]
+                              │
+                    (every 30 seconds)
+                              │
+                    [Generate WebM Blob]
+                              │
+                    [POST /api/transcribe] ──> [Groq Whisper v3]
+                              │
+                   [Update Transcript State]
+                              │
+                [Triggers Live Suggestions & NLP]
+```
+
+1. **Precision Timing**: The client sets a 30-second interval via `setTimeout`.
+2. **WebM Chunking**: On timeout, `MediaRecorder` is stopped. The browser packs accumulated array buffers into a WebM audio blob.
+3. **Seamless Handover**: Immediately upon calling `.stop()`, the browser triggers the `onstop` callback to upload the current chunk, and calls `.start()` again to capture the next 30 seconds without missing active audio input.
+4. **Manual Flushes**: Clicking "Refresh" triggers `flushCurrentSegment()`, calling `.stop()` early, forcing transcription of the current partial chunk, and resetting the timer.
+
+### 3.2 Real-time Visualizer Pipeline (Canvas + Web Audio)
+To prevent CPU bottlenecking from DOM reflows:
+1. **Audio Nodes**: The microphone stream is passed to an `AudioContext`.
+2. **Frequency Splitting**: An `AnalyserNode` uses Fast Fourier Transform (FFT) to convert waveform samples to frequency data (0–255 range).
+3. **Animation Loop**: `requestAnimationFrame` drives the rendering cycle, querying `analyser.getByteFrequencyData()`.
+4. **Raw Canvas Drawing**: Values are drawn directly on a 2D `<canvas>` element using specialized colors and heights. This keeps visual updates decoupled from React's state-reconciliation process.
 
 ---
 
-### 4.3 Database Schema Migrations (Alembic Setup)
+## 4. NLP Intelligence Extraction Strategy
 
-To manage schema migrations in production, configure Alembic inside the `backend/` directory:
+Every 2 transcript updates, the client triggers the `/api/intelligence` endpoint. This extracts structured metrics from the rolling window:
 
-```bash
-# Initialize Alembic inside the backend folder
-alembic init migrations
+```
+[Raw Transcript Window] 
+       │
+[Trim to Last N Words] (Configurable Context Window)
+       │
+[Request /api/intelligence] ──> [JSON Schema Enforced Prompt]
+                                          │
+                                   [Groq LLM Llama 70B]
+                                          │
+       ┌─────────────────┬────────────────┴────────────────┬─────────────────┐
+       ▼                 ▼                                 ▼                 ▼
+[Sentiment]        [Keywords]                      [Action Items]       [Decisions]
+       │                 │                                 │                 │
+       └─────────────────┴──────────────┬──────────────────┴─────────────────┘
+                                        ▼
+                        [ORM DB Commit to synapse.db]
+                                        ▼
+                        [Push State updates to UI Board]
 ```
 
-In `migrations/env.py`, import the SQLAlchemy metadata:
-```python
-from backend.database.connection import Base
-from backend.database.models import *
-
-target_metadata = Base.metadata
-```
-
-Generate and run a migration:
-```bash
-# Generate the initial migration script
-alembic revision --autogenerate -m "Initial schema setup"
-
-# Apply migration to the database file
-alembic upgrade head
-```
+* **Deduplication Logic**: When action items and decisions are fetched from the LLM, the client compares the incoming items with the existing ones using set comparisons. New items are merged while existing item modifications are updated, preventing duplicate listings.
+* **JSON Schema Enforcement**: We leverage Groq's JSON mode (`"response_format": {"type": "json_object"}`) and supply an absolute schema structure. In the event of schema failures, the backend gracefully catches the exception, logs it, and returns an empty schema template rather than crashing the client pipeline.
 
 ---
 
-### 4.4 Prompt Engineering & Context Management
+## 5. Scaling and Future Growth Considerations
 
-To keep API tokens within limits and avoid performance delays, the system limits the size of transcripts passed to the models:
+For a enterprise-scale deployment, the following adjustments are recommended:
 
-$$\text{Context Length} = \text{System Prompt} + \text{Meeting Memory (Prep Notes)} + \text{Recent Transcript Slice} + \text{Historical Chat Window}$$
-
-#### Suggestions Engine Pipeline
-The suggestions engine uses a structured prompt that requires responses to be formatted in a specific JSON structure:
-```json
-{
-  "suggestions": [
-    {
-      "type": "TALKING_POINT | QUESTION_TO_ASK | FACT_CHECK",
-      "title": "Short title",
-      "preview": "Actionable suggestion summary"
-    }
-  ]
-}
-```
-*   **JSON Format Enforcement**: Evaluates requests using `response_format={"type": "json_object"}`.
-*   **Context Trimming**: In `backend/routers/intelligence.py`, inputs are trimmed to the most recent keywords:
-    ```python
-    words = body.transcript_slice.split()[-body.context_window:]
-    transcript_slice = " ".join(words)
-    ```
-
----
-
-## 5. Security & Isolation Architecture
-
-*   **API Key Isolation**: Groq API keys are stored only in browser-managed `sessionStorage`. When the browser tab is closed, the key is cleared. This protects credentials from being stored on the backend or shared cloud servers.
-*   **Database Query Protection**: SQL injection vulnerabilities are mitigated by using SQLAlchemy's parameter binding for all database queries rather than string formatting.
-*   **CORS (Cross-Origin Resource Sharing)**: Production environments should restrict access to trusted origins:
-    ```python
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["https://synapse.yourdomain.com"], # Lock down allowed origins
-        allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
-        allow_headers=["X-Groq-API-Key", "Content-Type", "Authorization"],
-    )
-    ```
-
----
-
-## 6. Resilience & Error Mitigation Strategies
-
-*   **Handling Empty Audio Segments**: When the transcription endpoint `/api/transcribe` returns no text (indicating silence), the client increments a silence streak counter instead of adding empty entries. This prompts the suggestions engine to suggest topics to resume or unblock the meeting.
-*   **Connection and Timeout Retries**: The backend uses an asynchronous HTTPX client pool with a 60-second timeout to handle slow API requests:
-    ```python
-    _client = httpx.AsyncClient(timeout=60.0)
-    ```
-*   **JSON Parse Exceptions**: If the LLM generates a malformed JSON payload, the backend catches the parser error, logs the problem, and returns a fallback JSON object to keep the frontend running:
-    ```python
-    try:
-        data = json.loads(raw)
-    except Exception as exc:
-        logger.warning("Failed to parse JSON response: %s", exc)
-        return {"sentiment": "neutral", "action_items": [], "decisions": []}
-    ```
-*   **Database Locks**: Since SQLite only allows one write transaction at a time, we use `aiosqlite` for asynchronous database interactions to prevent requests from blocking the event loop.
+1. **Database Migration**: Switch the SQLAlchemy connection URL from SQLite to a managed PostgreSQL cluster (e.g. AWS RDS or Supabase) to support multi-tenant sessions and concurrent writes.
+2. **WebSockets for Audio**: Replace the 30s HTTP polling chunk loop with a continuous duplex WebSocket stream. Audio packets can be fed directly to a streaming Whisper model (e.g. using a service like Deepgram or AssemblyAI) for sub-second word-by-word transcription.
+3. **Vector Embeddings (RAG)**: For long-running meetings (over 2 hours), context windows for Suggestions and Chat will overflow. Integrating a vector store (e.g. pgvector or Pinecone) allows performing semantic searches on past transcripts, providing relevant context to the chat copilot without exceeding LLM context boundaries.
