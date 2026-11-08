@@ -8,23 +8,11 @@
 [![Python](https://img.shields.io/badge/Python_3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
-### 🔗 Live Application
-
-| | |
-|---|---|
-| **Live App** | **https://synapse-two-kappa.vercel.app** |
-| **API** | https://synapse-backend-dhuv.onrender.com |
-| **API Health** | https://synapse-backend-dhuv.onrender.com/healthz |
-
-> Create an account, then add your own Groq API key under **Settings** to enable
-> transcription and AI features. The key stays in your browser tab and is never
-> stored on the server.
-
----
+**🔗 Live App: [synapse-two-kappa.vercel.app](https://synapse-two-kappa.vercel.app)**  ·  API: [synapse-backend-dhuv.onrender.com](https://synapse-backend-dhuv.onrender.com/healthz)
 
 Synapse is an enterprise-grade, real-time meeting copilot and intelligence platform. It ingests live audio streams from your browser, transcribes them in rolling segments, executes periodic natural language processing (NLP) to extract tasks and decisions, visualizes conversational sentiment, and features a context-aware AI assistant.
 
-Built on a decoupled architecture, Synapse combines a **FastAPI asynchronous backend**, **Groq's LPU (Language Processing Unit) inference cloud**, a **React 19 single-page client**, and a **SQLAlchemy ORM layer** running on SQLite locally and managed PostgreSQL in production. Every workspace is protected by cookie-based authentication, and each account sees only its own meetings, transcripts, and action logs.
+Built on a decoupled architecture, Synapse combines a **FastAPI asynchronous backend**, **Groq's LPU (Language Processing Unit) inference cloud**, a **React 19 single-page client**, and a **SQLAlchemy ORM layer** running on SQLite locally and managed PostgreSQL in production. Workspaces are protected by cookie-based authentication, so each account sees only its own meetings.
 
 ---
 
@@ -35,7 +23,7 @@ Built on a decoupled architecture, Synapse combines a **FastAPI asynchronous bac
 *   **🎯 Scenario-Specific Playbooks**: Features hot-swappable suggestion models tailored for common business meetings (General Meeting, Daily Standup, Product Design, Sales Discovery).
 *   **📋 Structured Workspace Boards**: Automatically extracts action items (categorized by assignee and High/Medium/Low priority) and log decisions. Tracks and updates action statuses (pending/completed) directly in the database.
 *   **📈 Real-Time Sentiment & Keywords**: Visualizes ongoing meeting sentiment (Positive, Constructive, Neutral, Conflicted) and maps core keywords.
-*   **🔐 Authenticated, Account-Isolated Workspaces**: Argon2id password hashing, HTTP-only cookie sessions with rotating refresh tokens, CSRF protection, and per-user ownership checks enforced on every endpoint.
+*   **🔐 Authenticated Workspaces**: Argon2id password hashing, HTTP-only cookie sessions with rotating refresh tokens, CSRF protection, and per-user ownership checks on every endpoint.
 *   **💾 Persistent Meeting History Hub**: Retains meeting metadata, chat threads, transcripts, and action logs across browser restarts, allowing users to rename, reload, or purge sessions.
 
 ---
@@ -55,7 +43,6 @@ synapse/
 │   ├── prompts/              # Centralized Prompts
 │   │   └── defaults.py       # Playbooks, Copilot, & NLP System Prompts
 │   ├── migrations/           # Alembic Migration Environment
-│   │   └── versions/         # 0001_baseline · 0002_auth
 │   ├── routers/              # API Endpoints
 │   │   ├── auth.py           # Registration, Login, Logout, Refresh
 │   │   ├── chat.py           # Chat Copilot Streaming Router
@@ -64,17 +51,12 @@ synapse/
 │   │   ├── meeting.py        # Session Management Router
 │   │   ├── suggestions.py    # Playbook Live Suggestion Router
 │   │   └── transcribe.py     # Groq Whisper Transcription Router
-│   ├── security/             # Authentication Primitives
-│   │   ├── cookies.py        # Cookie Names & Policy
-│   │   ├── passwords.py      # Argon2id Hashing
-│   │   ├── ratelimit.py      # Sliding-Window Rate Limiter
-│   │   └── tokens.py         # Access / Refresh Token Issuing
+│   ├── security/             # Argon2id Hashing, Tokens, Cookies, Rate Limiting
 │   ├── services/             # Third-Party Clients
 │   │   └── groq_client.py    # Async HTTPX Client Wrapper for Groq API
-│   ├── tests/                # Pytest Suite (132 tests)
+│   ├── tests/                # Pytest Suite
 │   ├── cli.py                # Operational CLI (migrate, users, legacy data)
 │   ├── config.py             # Environment-Driven Settings
-│   ├── db_migrate.py         # Lock-Guarded Migration Runner
 │   ├── dependencies.py       # Auth, CSRF, Rate Limit & Ownership Guards
 │   ├── main.py               # Application Entry Point & Lifespan Context
 │   └── requirements.txt      # Python Dependencies
@@ -90,8 +72,8 @@ synapse/
 │   │   │   ├── SuggestionCard.jsx      # Individual Suggestion Details Card
 │   │   │   ├── TranscriptPanel.jsx     # Recording Controls & Canvas Visualizer
 │   │   │   └── WorkspacePanel.jsx      # AI Chat & Board Tabs Container
-│   │   ├── api.js            # Fetch Wrappers, Auth & Stream Decoders
-│   │   ├── App.jsx           # Route Gate & Master Coordinator
+│   │   ├── api.js            # Fetch Wrappers & Stream Decoders
+│   │   ├── App.jsx           # Route Gate & Master Application Coordinator
 │   │   ├── authContext.js    # Auth Context & useAuth Hook
 │   │   ├── index.html        # HTML Entrypoint
 │   │   ├── sessionSettings.js# Local Browser Storage Engine
@@ -105,105 +87,13 @@ synapse/
 
 ---
 
-## System Design
-
-A full treatment of the architecture, trade-offs, and scaling guidelines lives in
-[SYSTEM_DESIGN.md](SYSTEM_DESIGN.md). The essentials:
-
-```
-                  ┌─────────────────────────────────────────┐
-   Microphone ──▶ │  React 19 SPA  (Vercel)                 │
-                  │  MediaRecorder · Canvas Visualizer      │
-                  │  Groq key in sessionStorage             │
-                  └──────────────┬──────────────────────────┘
-                                 │  same-origin /api
-                                 │  (Vercel rewrite → Render)
-                                 ▼
-                  ┌─────────────────────────────────────────┐
-                  │  FastAPI  (Render)                      │
-                  │  auth → CSRF → rate limit → ownership   │
-                  └───────┬──────────────────────┬──────────┘
-                          │                      │
-                          ▼                      ▼
-             ┌────────────────────┐   ┌────────────────────────┐
-             │ SQLAlchemy ORM     │   │  Groq LPU Cloud        │
-             │ SQLite  (local)    │   │  Whisper-Large-v3      │
-             │ PostgreSQL (prod)  │   │  Llama 3.3 70B         │
-             └────────────────────┘   └────────────────────────┘
-```
-
-### Request Pipeline
-
-Every protected request passes four gates before it reaches business logic:
-**authentication** (resolve the session from the access cookie and confirm its
-server-side record is still active) → **CSRF** (double-submit comparison on
-every unsafe method) → **rate limiting** (per-user sliding window) →
-**ownership** (the authenticated user must own the `session_id`, whether it
-arrives in the path or the request body).
-
-### Authentication Architecture
-
-*   **Hashing**: Argon2id (19 MiB, t=2, p=1), the OWASP default. Hashes are
-    upgraded transparently on login if the parameters change.
-*   **Sessions**: a 30-minute access token and a 14-day refresh token, both in
-    `HttpOnly; Secure; SameSite` cookies — never `localStorage`. Each access
-    token names a row in `auth_sessions` that is checked on every request, so
-    logout, a password change, or token reuse revokes live tokens *immediately*
-    rather than at expiry.
-*   **Rotation**: every refresh issues a new pair and stores only a SHA-256
-    digest of the refresh token. Replaying a superseded token is treated as a
-    leak and revokes the entire session family.
-*   **Brute force**: a sliding-window limiter on login and registration, backed
-    by a database-level account lockout that survives restarts and extra
-    instances.
-*   **Same-origin by design**: the deployed frontend proxies `/api` to the
-    backend, so session cookies are first-party. Cross-site cookies cannot be
-    read by page scripts (which breaks double-submit CSRF) and are blocked
-    outright by Safari.
-
-### Data Model
-
-Eight tables: the six original meeting tables — `meeting_sessions`,
-`transcript_entries`, `suggestion_items`, `chat_messages`, `action_items`,
-`decision_items` — plus `users` and `auth_sessions`. The only change to the
-original six is a nullable `meeting_sessions.user_id` foreign key. Meetings
-recorded before authentication existed keep `user_id = NULL`; they are
-preserved and can be claimed with
-`python -m backend.cli claim-legacy-sessions --email <address>`.
-
-### Groq Credential Isolation
-
-The backend never holds a Groq credential. Each request carries the user's own
-key in the `X-Groq-API-Key` header; it is forwarded to Groq and discarded when
-the request ends. It is never written to the database, a log line, a session,
-or an API response, and upstream error bodies are scrubbed of it before being
-logged or returned. **Account authentication and Groq credentials are entirely
-separate systems.**
-
----
-
 ## Detailed API Specification
 
-All application endpoints require an authenticated session (HTTP-only cookies,
-sent automatically by the browser) plus the `X-CSRF-Token` header on any
-request that changes state. AI and audio endpoints additionally require the
-Groq API key in the `X-Groq-API-Key` request header. Only `/`, `/api/health`,
-`/healthz`, `/api/auth/register`, and `/api/auth/login` are public.
+All application endpoints require an authenticated session (HTTP-only cookies, sent automatically by the browser) and, for any request that changes state, the `X-CSRF-Token` header. AI and audio endpoints additionally require the Groq API key in the `X-Groq-API-Key` request header. Only `/api/health`, `/healthz`, and the register/login routes are public.
 
-| Status | Meaning |
-|---|---|
-| `401` | No session, or it expired or was revoked |
-| `403` | CSRF token missing/invalid, or the resource belongs to another user |
-| `404` | Resource does not exist |
-| `409` | Email already registered |
-| `413` | Body or audio upload over the limit |
-| `422` | Validation failed |
-| `429` | Rate limited, or the account is temporarily locked |
+Requests referencing a `session_id` are rejected with `403` unless the authenticated user owns that meeting.
 
 ### 1. Authentication
-
-Cookie-based; the browser handles the cookies, the client echoes the CSRF token
-in a header. Details of the design are in [System Design](#system-design) above.
 
 | Endpoint | Purpose |
 |---|---|
@@ -212,9 +102,6 @@ in a header. Details of the design are in [System Design](#system-design) above.
 | `POST /api/auth/refresh` | Rotate the session tokens |
 | `POST /api/auth/logout` | Revoke the session and clear cookies |
 | `GET /api/auth/me` | Current user — restores the session after a refresh |
-| `POST /api/auth/password` | Change password and sign out other devices |
-
-Passwords must be at least 10 characters with a letter and a number.
 
 ### 2. Meeting Management
 
@@ -252,24 +139,6 @@ Closes the active session, timestamping the end time.
       "ended_at": "2026-06-14T22:45:00Z",
       "status": "ended"
     }
-    ```
-
-#### `POST /api/history/{session_id}/transcript`
-Persists one captured transcript segment against its meeting. The client calls
-this for each speech segment as it is transcribed, which is what gives a saved
-meeting a transcript in the History Hub.
-*   **Request Payload**:
-    ```json
-    {
-      "text": "The login button is misaligned in Chrome.",
-      "time": "10:01:00",
-      "isoTime": "2026-06-14T10:01:00Z",
-      "kind": "speech"
-    }
-    ```
-*   **Success Response (`201 Created`)**:
-    ```json
-    { "id": "7f3c1a9e-2b4d-4c8a-9e1f-0a5b6c7d8e9f" }
     ```
 
 ### 3. Audio & AI Services
@@ -346,12 +215,10 @@ Streams a conversational response via Server-Sent Events (SSE) based on chat his
 
 ### Prerequisites
 *   **Node.js**: `v18.0.0` or higher
-*   **Python**: `v3.11` or higher (3.13 recommended)
+*   **Python**: `v3.10.0` or higher
 
 ### 1. Backend Service Launch
-
-Run these from the **repository root** so the `backend` package resolves and
-the SQLite file lands in one predictable place.
+Run these from the repository root so the `backend` package resolves.
 
 ```bash
 # Setup virtual environment
@@ -362,7 +229,7 @@ source backend/.venv/bin/activate
 pip install --upgrade pip
 pip install -r backend/requirements.txt
 
-# Create a local .env (SQLite default needs no edits to get started)
+# Create a local .env (the SQLite default needs no edits)
 cp backend/.env.example backend/.env
 
 # Apply database migrations
@@ -371,9 +238,7 @@ python -m backend.cli migrate
 # Start FastAPI hot-reload server
 python -m uvicorn backend.main:app --reload --port 8001
 ```
-Verify backend operation at `http://127.0.0.1:8001/docs` (Swagger UI) and
-`http://127.0.0.1:8001/healthz` (health probe). Port **8001** matches the Vite
-dev proxy in `client/vite.config.js`.
+Verify backend operation by accessing the Swagger UI documentation at `http://127.0.0.1:8001/docs`. Port **8001** matches the Vite dev proxy in `client/vite.config.js`.
 
 ### 2. Frontend Client Launch
 ```bash
@@ -386,41 +251,13 @@ npm install
 # Run the Vite web server
 npm run dev
 ```
-Open your browser and navigate to `http://127.0.0.1:5173`. Leave `VITE_API_BASE`
-unset locally: the Vite dev server proxies `/api` to the backend, which keeps
-the app same-origin so session cookies work over plain HTTP.
+Open your browser and navigate to `http://127.0.0.1:5173`. 
 
 ### 3. Create an Account
+Register on the sign-in screen, or from the command line with `python -m backend.cli create-user --email you@company.com`. Passwords need at least 10 characters including a letter and a number.
 
-Register on the sign-in screen, or from the command line:
-
-```bash
-python -m backend.cli create-user --email you@company.com
-```
-
-### 4. Add Your Groq API Key
-In the browser UI, click the **Settings** cog in the navbar. Input your **Groq API Key** (`gsk_...`). This key is retained in the browser tab's `sessionStorage` and sent securely with each API request header. It is not part of your account and is cleared when you sign out.
-
-### 5. Database Migrations
-
-Alembic owns the schema. Both revisions are written defensively — anything that
-already exists is left untouched — so the same command works on a brand-new
-PostgreSQL database and on a pre-existing SQLite file without dropping data.
-
-```bash
-python -m backend.cli migrate                                   # upgrade to head
-python -m backend.cli list-users                                # list accounts
-python -m backend.cli claim-legacy-sessions --email you@co.com  # adopt pre-auth meetings
-cd backend && alembic revision --autogenerate -m "describe it"  # new revision
-```
-
-### 6. Running the Test Suite
-
-```bash
-pip install -r backend/requirements-dev.txt
-cd backend && python -m pytest          # 132 tests
-cd client && npm run lint && npm run build
-```
+### 4. Application Authentication
+In the browser UI, click the **Settings** cog in the navbar. Input your **Groq API Key** (`gsk_...`). This key is retained in the browser tab's `sessionStorage` and sent securely with each API request header. It is never part of your account and is cleared when you sign out.
 
 ---
 
@@ -439,10 +276,7 @@ services:
     working_dir: /app
     ports:
       - "8001:8001"
-    command: >
-      sh -c "pip install -r backend/requirements.txt &&
-             python -m backend.cli migrate &&
-             uvicorn backend.main:app --host 0.0.0.0 --port 8001"
+    command: sh -c "pip install -r backend/requirements.txt && python -m backend.cli migrate && uvicorn backend.main:app --host 0.0.0.0 --port 8001"
     environment:
       - PYTHONUNBUFFERED=1
       - SECRET_KEY=local-development-only-change-me
@@ -466,117 +300,17 @@ docker-compose up --build
 
 ---
 
-## Environment Variables
+## Production Security & Deployment
 
-### Backend
+Deployed at **[synapse-two-kappa.vercel.app](https://synapse-two-kappa.vercel.app)** — React client on **Vercel**, FastAPI backend and managed **PostgreSQL** on **Render** (`render.yaml` provisions both).
 
-| Variable | Required | Default | Purpose |
-|---|---|---|---|
-| `SECRET_KEY` | **production** | random per boot | Signs session tokens. Rotating it signs everyone out. |
-| `DATABASE_URL` | **production** | `sqlite:///./synapse.db` | `postgres://` and `postgresql://` are normalised to the psycopg driver. |
-| `ENVIRONMENT` | no | `development` | `production` enables HSTS, hides docs, requires `SECRET_KEY`. |
-| `FRONTEND_URL` | **production** | – | Deployed frontend origin; appended to the CORS allowlist. |
-| `ALLOWED_ORIGINS` | **production** | localhost dev origins | Comma-separated exact origins. Never `*`. |
-| `COOKIE_SAMESITE` / `COOKIE_SECURE` | no | `lax` / on in prod | `lax` when the API is same-origin (the deployed setup). |
-| `ACCESS_TOKEN_MINUTES` / `REFRESH_TOKEN_DAYS` | no | `30` / `14` | Session lifetimes. |
-| `RUN_MIGRATIONS_ON_STARTUP` | no | on in prod | Applies Alembic migrations during startup. |
-| `MAX_UPLOAD_BYTES` / `MAX_JSON_BODY_BYTES` | no | `26214400` / `1048576` | Audio and JSON body caps. |
-| `LOGIN_RATE_LIMIT` / `REGISTER_RATE_LIMIT` / `API_RATE_LIMIT` | no | `10` / `5` / `240` | Throttles per window. |
-| `MAX_FAILED_LOGINS` / `ACCOUNT_LOCK_MINUTES` | no | `8` / `15` | Database-backed account lockout. |
-| `ENABLE_DOCS` | no | off in prod | Serves `/docs` and `/openapi.json`. |
-| `PYTHON_VERSION` | **Render** | – | Pinned to `3.13.5`. See the warning below. |
+*   **HTTPS and SSL/TLS Enforcements**: Both tiers are served over HTTPS, which prevents network eavesdropping of the `X-Groq-API-Key` header and is also required for microphone capture and `Secure` cookies.
+*   **CORS Configurations**: `ALLOWED_ORIGINS` / `FRONTEND_URL` lock the allowlist to the deployed frontend origin — never `*`, which browsers reject for credentialed requests anyway.
+*   **Same-Origin API Proxy**: `client/vercel.json` rewrites `/api/*` to the Render backend. This is load-bearing: called cross-origin, the session cookies become third-party, page scripts cannot read them, the CSRF token is always empty, and every state-changing request fails with `403`. Safari blocks third-party cookies outright. Proxying keeps the cookies first-party. Leave `VITE_API_BASE` unset in production.
+*   **Database Configuration**: `DATABASE_URL` drives everything — unset for local SQLite, or a managed PostgreSQL connection string in production (`postgres://` and `postgresql://` are both normalised). Migrations run on startup, serialised across instances by an advisory lock.
+*   **Python Version Pin**: `PYTHON_VERSION=3.13.5` in `render.yaml` is required. Render's default for new services is now 3.14.x, where `pydantic-core` and `psycopg-binary` have no wheels and the build fails.
+*   **Health Probes**: `/healthz` is dependency-free so a database blip cannot fail a deploy and trigger a rollback loop; it also reports `configuration_warnings` for misconfigurations that leave the service up but unusable. `/readyz` checks database reachability.
+*   **Credential Handling**: Groq API keys live only in the browser tab's `sessionStorage`, travel per request in a header, and are never written to the database, logs, or API responses — upstream error bodies are scrubbed of them. Passwords are stored only as Argon2id hashes; refresh tokens only as SHA-256 digests.
+*   **Required Environment Variables**: `SECRET_KEY`, `DATABASE_URL`, `FRONTEND_URL`, `ALLOWED_ORIGINS`, `PYTHON_VERSION`. See `backend/.env.example` for the full list with defaults.
 
-See `backend/.env.example` and `client/.env.example` for complete templates.
-
----
-
-## Production Deployment
-
-**Frontend:** Vercel · **Backend:** Render · **Database:** Render managed PostgreSQL.
-
-The live deployment is at
-**https://synapse-two-kappa.vercel.app**, backed by
-`https://synapse-backend-dhuv.onrender.com`.
-
-### Backend (Render)
-
-`render.yaml` is a blueprint that provisions the web service and the database
-together. `SECRET_KEY` is generated by Render and `DATABASE_URL` is wired from
-the managed database, so no secret is ever committed.
-
-1. In Render, choose **New → Blueprint** and point it at this repository.
-2. Set the two dashboard-only variables once the Vercel domain exists:
-   `FRONTEND_URL` and `ALLOWED_ORIGINS`.
-3. Deploy. Migrations run automatically on startup, serialised across instances
-   by a PostgreSQL advisory lock.
-4. Confirm the probes:
-   * `GET /healthz` → `{"status":"ok","environment":"production"}`. Deliberately
-     does **not** touch the database, so a slow database cannot fail the deploy's
-     health check and trigger a rollback loop. If it returns a
-     `configuration_warnings` array, fix those first — the service is up but
-     will not work.
-   * `GET /readyz` → `{"status":"ok","database":"reachable"}`, or `503`.
-
-> ⚠️ **Do not remove the `PYTHON_VERSION` pin.** Render's default for newly
-> created services is now 3.14.x, and `pydantic-core` and `psycopg-binary`
-> publish no cp314 wheels — the build falls back to a source compile and fails.
-> The blueprint pins `3.13.5`, the version the test suite is verified on.
-
-> Render's **free** PostgreSQL plan expires 30 days after creation, and the free
-> web plan sleeps when idle, so the first request after a pause takes a few
-> seconds.
-
-### Frontend (Vercel)
-
-1. Import the repository and set the **root directory** to `client`.
-2. Deploy. `client/vercel.json` handles SPA routing, the static security
-   headers, and the `/api` proxy.
-
-### Why the API is proxied, not called cross-origin
-
-`client/vercel.json` rewrites `/api/*` to the Render backend:
-
-```json
-{ "source": "/api/:path*", "destination": "https://<your-backend>.onrender.com/api/:path*" }
-```
-
-This is **load-bearing, not an optimisation.** Calling the backend directly
-across origins makes the session cookies third-party, and page scripts cannot
-read another domain's cookie — so the double-submit CSRF token is always empty
-and every state-changing request is rejected with `403`. Safari blocks
-third-party cookies outright regardless. Proxying makes the cookies first-party,
-so CSRF works, `SameSite` can stay `lax`, and every browser behaves the same.
-
-Leave `VITE_API_BASE` unset in production so the client calls same-origin
-`/api`. If you change the backend URL, update the rewrite destination.
-
----
-
-## Security Summary
-
-| Area | Implementation |
-|---|---|
-| Password storage | Argon2id, 19 MiB / t=2, transparent rehash on login |
-| Session transport | HTTP-only, Secure, SameSite cookies — never `localStorage` |
-| Session revocation | Server-side `auth_sessions` row checked per request |
-| Refresh tokens | Rotated per use, stored as SHA-256 digests, reuse revokes the family |
-| CSRF | Double-submit cookie + header, constant-time comparison |
-| CORS | Explicit origin allowlist, credentials enabled, no wildcard |
-| Brute force | Sliding-window limiter + database-backed account lockout |
-| Upload limits | 25 MB audio cap enforced while streaming, plus Content-Length check |
-| Input validation | Pydantic models with explicit field constraints |
-| SQL injection | SQLAlchemy parameter binding throughout; no string-built SQL |
-| Error handling | Generic 500s; validation errors never echo submitted values |
-| Secret exposure | Groq keys scrubbed from logs and upstream error bodies |
-| Security headers | CSP, HSTS, nosniff, DENY framing, Referrer-Policy, COOP/CORP |
-| Secret management | Everything from the environment; `.env` and `*.db` are git-ignored |
-
-Known limitation: the in-process rate limiter counts per instance. On a
-single-instance plan this is exact; if you scale out, move it to Redis. The
-database-backed account lockout is unaffected.
-
----
-
-## License
-
-Released under the [MIT License](https://opensource.org/licenses/MIT).
+> Render's free PostgreSQL plan expires 30 days after creation, and the free web plan sleeps when idle, so the first request after a pause takes a few seconds.
